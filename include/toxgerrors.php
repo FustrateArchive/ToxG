@@ -1,5 +1,5 @@
 <?php
-
+// First commit
 class ToxgErrors
 {
 	protected static $prior = null;
