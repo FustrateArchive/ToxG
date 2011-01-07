@@ -1,0 +1,185 @@
+<?php
+
+class ToxgTestHarness extends ToxgTemplate
+{
+	static $test = 'pass_var';
+	const TEST = 'pass_const';
+
+	protected $layers = array('output--toxg-direct');
+	protected $expect_fail = false;
+	protected $expect_fail_line = null;
+	protected $expect_output = null;
+	protected $expect_output_trim = false;
+	protected $expect_output_fail_line = null;
+	protected $output_params = array();
+
+	public function __construct()
+	{
+		parent::__construct(null);
+		$this->source_files = array();
+	}
+
+	public function setOutputParams(array $output_params)
+	{
+		$this->output_params = $output_params;
+	}
+
+	public function addData($data)
+	{
+		$this->source_files[] = new ToxgSource($data, 'unit-test-file');
+	}
+
+	public function addWrappedData($data)
+	{
+		$this->addData('<tpl:template name="my:output">' . $data . '</tpl:template>');
+	}
+
+	public function addDataForOverlay()
+	{
+		$this->addData('<tpl:template name="my:output"><my:example /></tpl:template>');
+	}
+
+	public function addOverlay($data)
+	{
+		$this->overlays[] = new ToxgOverlay(new ToxgSource($data, 'unit-test-overlay'));
+	}
+
+	public function addWrappedOverlay($data)
+	{
+		$this->addOverlay('<tpl:alter match="my:output my:example" position="after">' . $data . '</tpl:alter>');
+	}
+
+	public function setLayers(array $layers)
+	{
+		$this->layers = $layers;
+	}
+
+	public function expectFailure($line = null)
+	{
+		$this->expect_fail_line = $line;
+		$this->expect_fail = true;
+	}
+
+	public function isExceptionFailure($e)
+	{
+		if ($this->expect_fail_line !== null && $e->tpl_line != $this->expect_fail_line)
+			return 'Wrong line: ' . $e->getMessage() . '.';
+
+		if (!$this->expect_fail)
+			return $e->getMessage();
+
+		return false;
+	}
+
+	public function expectOutput($data, $trim = true)
+	{
+		$this->expect_output = $data;
+		$this->expect_output_trim = $trim;
+	}
+
+	public function expectOutputFailure($line)
+	{
+		$this->expect_output_fail_line = $line;
+		$this->expect_output = '';
+	}
+
+	public function isFailure()
+	{
+		if ($this->expect_fail)
+			return 'Expected to fail with exception.';
+
+		return false;
+	}
+
+	public function compile($my_ns)
+	{
+		$cache_file = dirname(dirname(__FILE__)) . '/.test.output';
+
+		parent::compile($cache_file);
+
+		// Try to lint it, we can't eval or it will define functions.
+		if (!php_validate_syntax(file_get_contents($cache_file)))
+			throw new Exception('Lint failure.');
+
+		if ($this->expect_output !== null)
+		{
+			require($cache_file);
+			$this->testOutput($my_ns);
+		}
+	}
+
+	protected function testOutput($my_ns)
+	{
+		try
+		{
+			$actual = $this->testOutputExecute($my_ns);
+			$failed = false;
+		}
+		catch (Exception $e)
+		{
+			if ($this->expect_output_fail_line === null || $this->expect_output_fail_line != $e->getLine())
+				throw $e;
+
+			$actual = '';
+			$failed = true;
+		}
+
+		if ($this->expect_output_fail_line !== null && !$failed)
+			throw new Exception('Expecting a failure during output.');
+
+		if ($this->expect_output != ($this->expect_output_trim ? trim(preg_replace('~\s+~', ' ', $actual)) : $actual))
+			throw new Exception('Output did not match expected.');
+	}
+
+	protected function testOutputExecute($my_ns)
+	{
+		ob_start();
+
+		try
+		{
+			foreach ($this->layers as $layer)
+			{
+				$func_prefix = ToxgExpression::makeTemplateName($my_ns, $layer);
+				call_user_func_array($func_prefix . '_above', array(&$this->output_params));
+			}
+
+			$rev = array_reverse($this->layers);
+			foreach ($rev as $layer)
+			{
+				$func_prefix = ToxgExpression::makeTemplateName($my_ns, $layer);
+				call_user_func_array($func_prefix . '_below', array(&$this->output_params));
+			}
+
+			$actual = ob_get_contents();
+			ob_end_clean();
+
+			return $actual;
+		}
+		catch (Exception $e)
+		{
+			ob_end_clean();
+			throw $e;
+		}
+	}
+
+	public function compileFirstPass()
+	{
+		$temp = array();
+		foreach ($this->source_files as $file)
+			$temp[] = clone $file;
+
+		parent::compileFirstPass();
+
+		$this->source_files = $temp;
+	}
+
+	public function __destruct()
+	{
+		$cache_file = dirname(dirname(__FILE__)) . '/.test.output';
+
+		if (file_exists($cache_file))
+			@unlink($cache_file);
+	}
+}
+
+?>

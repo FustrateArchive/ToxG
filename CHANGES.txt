@@ -1,0 +1,12 @@
+TOX-G: Major changes
+================================================================================
+
+Version 0.1-alpha1
+--------------------------------------------------------------------------------
+ + Added common variables (which are used throughout all templates.)
+ + Added the "requires" attribute to tpl:template so templates may explicitly
+   require parameters.
+ * Templates are now compiled together and optimized based on a pre-build
+   phase.  This changes the exposed API a bit.
+ * There are now wrapper templates to ensure that overlays are applied to top
+   level template calls.

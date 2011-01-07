@@ -1,0 +1,9 @@
+<!--- Comment. --->
+<tpl:container xmlns:tpl="urn:toxg:template" xmlns:my="http://www.unknownbrackets.org/">
+	<tpl:alter match="my:additional-head" position="before">
+		{$context.head_page_title}
+		<script><!-- // --><![CDATA[
+			alert(<tpl:json value="{$context.head_page_title}" />);
+		]]></script>
+	</tpl:alter>
+</tpl:container>

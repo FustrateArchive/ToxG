@@ -1,0 +1,77 @@
+<tpl:container xmlns:tpl="urn:toxg:template" xmlns:my="http://www.unknownbrackets.org/">
+	<tpl:template name="my:html">
+		<html xmlns="http://www.w3.org/1999/xhtml" lang="{$context.lang_default}">
+			<head>
+				<meta http-equiv="Content-Type" content="text/html; charset={#lang_character_set}" />
+
+				<title>
+					Unknown W. Brackets
+					<tpl:if test="!empty({$context.head_page_title})">
+						- <tpl:raw value="{$context.head_page_title}" />
+					</tpl:if>
+				</title>
+
+				<link rel="home" type="text/html" href="/" title="Unknown W. Brackets - {#section_home}" />
+				<link rel="stylesheet" type="text/css" href="/default-z/style.css" />
+				<link rel="stylesheet" type="text/css" href="/default-z/print.css" media="print" />
+
+				<tpl:foreach from="{$context.additional_stylesheets}" as="{$sheet}">
+					<link rel="stylesheet" type="text/css" href="/default-z/{$sheet}" />
+				</tpl:foreach>
+
+				<tpl:if test="!empty({$context.page_keywords})">
+					<meta name="keywords" content="{$context.page_keywords}" />
+				<tpl:else />
+					<meta name="keywords" content="" />
+				</tpl:if>
+
+				<tpl:if test="!empty({$context.page_description})">
+					<meta name="description" content="{$context.page_description}" />
+				</tpl:if>
+
+				<my:additional-head />
+			</head>
+			<tpl:content />
+		</html>
+	</tpl:template>
+
+	<tpl:template name="my:main">
+		<body>
+			<div id="header-bar">
+				<h1><tpl:default var="{$context.page_title}" default="Unknown W. Brackets" /></h1>
+
+				<tpl:if test="!empty({$context.breadcrumbs})">
+					<div id="breadcrumbs">
+						<tpl:foreach from="{$context.breadcrumbs}" as="{$crumb}">
+							<a href="{$crumb.href}">{$crumb.title}</a>
+							<tpl:if test="empty({$crumb.is_last})">&raquo;</tpl:if>
+						</tpl:foreach>
+					</div>
+				</tpl:if>
+
+				<tpl:if test="!empty({$context.navigation_links})">
+					<ul id="header-sections">
+						<tpl:foreach from="{$context.navigation_links}" as="{$link}">
+							<li<tpl:if test="!empty({$link.is_last})"> id="last-header-section"</tpl:if>>
+								<a<tpl:if test="{$link.selected}"> id="selected-header-section"</tpl:if> href="{$link.href}">{$link.title}</a>
+							</li>
+						</tpl:foreach>
+					</ul>
+				</tpl:if>
+			</div>
+			<div id="main-content">
+				<tpl:content />
+			</div>
+			<div id="footer" class="non-print"></div>
+
+			<script type="text/javascript"><!-- // --><![CDATA[
+				var time = document.cookie.match(/x-generation-time=([0-9\.]+)/);
+				if (time && time[1])
+				{
+					document.getElementById("footer").innerHTML = <tpl:json value="{#footer_generated_in}" />.replace("%s", time[1]);
+					document.cookie = "x-generation-time=; expires=" + new Date().toGMTString();
+				}
+			// ]]></script>
+		</body>
+	</tpl:template>
+</tpl:container>

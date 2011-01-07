@@ -1,0 +1,47 @@
+For developers - why not X?
+================================================================================
+
+Why not XSL?
+--------------------------------------------------------------------------------
+XSL is a great transformation language written in XML.  However, since it's an
+XML application, it requires that it's well-formatted XML.
+
+This leads to a few things that programmers find annoying:
+
+  - Templates cannot contain partial elements, although this is uncommon.
+
+  - Building an element with transformations requires using something like
+    xsl:tag, xsl:attribute, which are very annoying to use in practice.
+
+  - In practice, entity references are painful and external doctypes don't work.
+
+  - Using it usually necessitates using XML as output, which causes extra layers
+    of data output and buffering, which is less efficient.
+
+  - Duplicate templates are not suported, which makes automatic additions from
+    external modules difficult, which is the main purpose of this engine.
+
+
+Why not use PIs?
+--------------------------------------------------------------------------------
+It's true that the tags used in TOX-G are really processing instructions,
+especially when it comes to things like <tpl:else />.  XML has a standard way
+of dealing with these, PIs.  They aren't used because:
+
+  - PIs must start with an identifer, which makes open/close sections seem
+    out of place, although they are important and key in templating.
+
+  - They will confuse people with PHP, since <?php ?> is a PI.
+
+  - It's still not going to be valid XML.
+
+
+Why not use PHP?
+--------------------------------------------------------------------------------
+The purpose of TOX-G is to make external alterations to templates easy and
+fairly cheap performance-wise.  While the same thing can be accomplished using
+PHP alone, it won't mesh as well with HTML, and will take more code.
+
+TOX-G also makes it easier to avoid common XSS bugs by escaping entities
+on all output by default, except within CDATA tags.  PHP doesn't provide this
+layer of security, even though it's almost always used with HTML.

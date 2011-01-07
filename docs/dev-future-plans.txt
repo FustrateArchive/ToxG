@@ -1,0 +1,144 @@
+TOX-G Future Plans
+================================================================================
+
+Get a better name?
+--------------------------------------------------------------------------------
+Yeah, I couldn't think of anything better.  Maybe it's fine.  Template Overlay
+XHTML Generator, TOX-G.
+
+Status: not confirmed
+
+Benefits:
+	1. Might not sound as goofy.
+
+Drawbacks:
+	1. Have to change all the class names, documentation, extensions.
+	2. Need to think of new shortenings of the name.
+
+
+Improve unit test suite
+--------------------------------------------------------------------------------
+Would need to be changed to integrate into whatever systems we need.  Right
+now, just a quick and dirty one.
+
+Status: not confirmed
+
+Benefits:
+	1. Easier integration with continuous integration.
+	2. Better notification of failures, correct errors, etc. possibly?
+	3. Testing on performance changes of unit tests.
+
+Drawbacks:
+	1. Might be more work to write tests.
+
+
+Carefully test versions of PHP/etc.
+--------------------------------------------------------------------------------
+Right now, this has only seen proper testing in PHP 5.2.6 and 5.3.2.  It needs
+to be given more thorough testing across PHP versions, running the full test
+suite for all of those meant to be supported.
+
+For one, json_encode()/json_decode() compat code will need to be used.
+
+Status: not confirmed
+
+Benefits:
+	1. Obvious, will support versions of PHP we intend.
+
+Drawbacks:
+	1. May have significant problems in some version, unlikely.
+
+
+Measure performance in tests
+--------------------------------------------------------------------------------
+Even if this is a simple "shouldn't take longer than 100ms" or something, there
+should be some sort of performance regression test.
+
+An ideal system would log performance across test runs and show how performance
+changes.
+
+Status: not confirmed
+
+Benefits:
+	1. Will help to identify performance regressions or improvements.
+	2. Can serve as a poor man's profiling for what to concentrate on.
+
+Drawbacks:
+	1. Could be a lot of work to implement right.
+
+
+Optimization and profiling
+--------------------------------------------------------------------------------
+Optimization and profiling of the compilation process needs to be done to make
+sure there are no obvious bottlenecks or major areas for performance gain.
+Even though it's meant for the output to be cached, spending at least some time
+will improve things for developers, and prevent any serious performance flaws.
+
+Status: not confirmed
+
+Benefits:
+	1. Will ensure there are no major performance problems in system.
+
+Drawbacks:
+	1. Can take a lot of time to do accurately and usefully.
+	2. Won't affect most people since the compiler won't run often.
+
+
+Output optimization and inlining
+--------------------------------------------------------------------------------
+There are many areas for improvement, such as inlining simple/obvious template
+calls, or similar.  It might also be worthwhile to remove dead code
+automatically, (statically false if conditions, etc.) and evaluate obvious
+expressions at compile time.
+
+Some of that is definitely overboard, but it should be considered and weighed.
+
+Status: not confirmed
+
+Benefits:
+	1. Could save memory storage.
+	2. Should save at least some time.
+	3. Will affect everyone who uses the system greatly.
+
+Drawbacks:
+	1. Can be a lot of work, especially the more major portions.
+	2. Performance benefit/difference may be extremely small.
+	3. Need to do some profiling/benchmarking to know what to worry about.
+
+
+Better i18n support
+--------------------------------------------------------------------------------
+The current version throws English exceptions only, and builds a few of them as
+strings.  This isn't great for internationalization, since the error messages
+should ideally be in multiple languages.
+
+The correct plan of attack for i18n messages should be made and implemented.
+
+Status: not confirmed
+
+Benefits:
+	1. People who speak other languages can write templates more easily.
+
+Drawbacks:
+	1. None really.
+
+
+The tpl:format element, language strings
+--------------------------------------------------------------------------------
+Format could be very beneficial, and needs to have its own API for being
+extended (as for example, adding currency formats from a mod or application.)
+
+This has a lot to with i18n and language strings, which also need to be
+finalized.  Once correct i18n strategies have been determined, they should be
+implemented and applied to both things.
+
+Status: not confirmed
+
+Benefits:
+	1. Will provide a consistent way to format content within templates for
+	   a variety of types (dates, etc.)
+	2. Will allow a template to more accurately format things as would be
+	   displayed best (e.g. just date, full date/time, etc.)
+
+Drawbacks:
+	1. Need to figure out best way for tpl:format to work.
