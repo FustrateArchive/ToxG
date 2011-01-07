@@ -85,6 +85,7 @@ class ToxgPrebuilder
 					'name' => $name,
 					'file' => $token->file,
 					'line' => $token->line,
+					'parameters' => array(),
 					'requires' => array(),
 				);
 
@@ -96,6 +97,16 @@ class ToxgPrebuilder
 
 					foreach ($requires as $required)
 						$this->templates[$name]['requires'][] = ToxgExpression::makeVarName($required);
+				}
+
+				// The (optional) parameters attribute allows the template to request variables from the parent template
+				// without the need to explictly pass it
+				if (!empty($token->attributes['parameters']))
+				{
+					$params = array_filter(array_map('trim', preg_split('~[\s,]+~', $token->attributes['parameters'])));
+
+					foreach ($params as $param)
+						$this->templates[$name]['parameters'][] = $param;
 				}
 			}
 

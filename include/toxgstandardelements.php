@@ -25,12 +25,50 @@ class ToxgStandardElements
 			'set',
 			'json',
 			'default',
+			'call',
 			'template-push',
 			'template-pop',
 		);
 
 		foreach ($tags as $tag)
 			$template->listenEmitBasic($tag, array($inst, 'tpl_' . str_replace('-', '_', $tag)));
+	}
+
+	public function tpl_call(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
+	{
+		if ($token->type != 'tag-empty')
+			$token->toss('invalid tag type');
+
+		$this->requireAttributes(array('name'), $token);
+
+		list ($ns, $name) = explode(':', $attributes['name']);
+		$name = ToxgExpression::stringWithVars($name, $token);
+		$nsuri = ToxgExpression::stringWithVars($token->getNamespace($ns), $token);
+		$base = 'ToxgExpression::makeTemplateName(' . $nsuri . ', ' . $name . ')';
+		$func_above = $base . ' . \'_above\'';
+		$func_below = $base . ' . \'_below\'';
+
+		if (empty($name) || empty($ns) || empty($nsuri))
+			$token->toss('given name for tpl_call is empty');
+
+		$this->tpl_call_emitFunc($func_above, $builder, $attributes, true, $token);
+		$this->tpl_call_emitFunc($func_below, $builder, $attributes, false, $token);
+	}
+
+	protected function tpl_call_emitFunc($func_name, $builder, $attributes, $first, $token)
+	{
+		// Do we know for sure that it is defined?  If so, we can skip an if.
+		$builder->emitCode('if (function_exists('. $func_name . ')) {', $token);
+
+		$builder->emitCode('global $__toxg_argstack; if (!isset($__toxg_argstack)) $__toxg_argstack = array();', $token);
+
+		if ($first)
+			$builder->emitCode('$__toxg_args = unserialize(\'' . serialize($attributes) . '\'); $__toxg_argstack[] = &$__toxg_args;', $token);
+
+		// Better to use a de-refenced call than call_user_func/_array, because of reference issue.
+		$builder->emitCode('$__toxg_func = ' . $func_name . '; $__toxg_func($__toxg_args);', $token);
+
+		$builder->emitCode('}', $token);	
 	}
 
 	public function tpl_output(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
