@@ -1,5 +1,5 @@
 <?php
-
+// Test
 class ToxgErrors
 {
 	protected static $prior = null;
