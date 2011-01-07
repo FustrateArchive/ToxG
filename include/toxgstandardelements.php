@@ -17,6 +17,7 @@ class ToxgStandardElements
 			'output',
 			'raw',
 			// !!! 'format',
+			'for',
 			'foreach',
 			'if',
 			'else',
@@ -56,6 +57,35 @@ class ToxgStandardElements
 		$builder->emitOutputParam('(' . $expr . ')', $token);
 	}
 
+	public function tpl_for(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
+	{
+		$this->requireAttributes(array('init', 'while', 'modify'), $token);
+
+		$init = '';
+		$while = '';
+		$modify = '';
+
+		if (!empty($attributes['init']))
+			$init = ToxgExpression::normal($attributes['init'], $token);
+
+		if (!empty($attributes['while']))
+			$while = ToxgExpression::boolean($attributes['while'], $token);
+
+		if (!empty($attributes['modify']))
+			$modify = ToxgExpression::normal($attributes['modify'], $token);
+
+		// If there's no parens or $'s in it, it can't be for-able.
+		if (empty($init) && empty($while) && empty($modify))
+			$token->toss('At least one parameter must be used in a for loop.');
+
+		if ($type === 'tag-empty')
+			$builder->emitCode('for (' . $init . '; ' . $while . '; ' . $modify . ') {}', $token);
+		else if ($type === 'tag-start')
+			$builder->emitCode('for (' . $init . '; ' . $while . '; ' . $modify . ') {', $token);
+		else
+			$builder->emitCode('}', $token);
+	}
+
 	public function tpl_foreach(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
 	{
 		$this->requireNotEmpty($token);
@@ -64,14 +94,26 @@ class ToxgStandardElements
 		if ($type === 'tag-start')
 		{
 			$from = ToxgExpression::normal($attributes['from'], $token);
-			$as = ToxgExpression::variableNotLang($attributes['as'], $token);
+
+			if (strpos($attributes['as'], '=>') !== false)
+			{
+				list ($key, $as) = explode('=>', $attributes['as']);
+				$key = ToxgExpression::variableNotLang(trim($key), $token);
+				$as = ToxgExpression::variableNotLang(trim($as), $token);
+			}
+			else
+				$as = ToxgExpression::variableNotLang($attributes['as'], $token);
 
 			// If there's no parens or $'s in it, it can't be foreachable.
 			if (strpos($from, '$') === false && strpos($from, '(') === false)
 				$token->toss('Cannot foreach over a string, you probably want a variable.');
 
-			// !!! Do we want a way to have a key?  I think no.
-			$builder->emitCode('foreach (' . $from . ' as ' . $as . ') {', $token);
+			// !!! Do we want a way to have a key?  I think so.
+			if (isset($key))
+				$builder->emitCode('foreach (' . $from . ' as ' . $key . ' => ' . $as . ') {', $token);
+			else
+				$builder->emitCode('foreach (' . $from . ' as ' . $as . ') {', $token);
+
 		}
 		else
 		{
