@@ -218,10 +218,29 @@ tpl:foreach
 	Requires a "from" attribute that defines the list or array of items.
 
 	Requires an "as" attribute which is the variable to use for the value.
+	This can also be a {$key} => {$value} pair, if specified.
 
 	<tpl:foreach from="{$animals}" as="{$animal}">
 		<li>{$animal.name} goes {$animal.sound}.</li>
 	</tpl:foreach>
+
+	<tpl:foreach from="{$tasks}" as="{$id} => {$task}">
+		<a href="?delete={$id}">Delete task #{$id} - {$task.name}.</a>
+	</tpl:foreach>
+
+tpl:for
+................................................................................
+	Used to loop through code multiple times, based on certain inputs.
+
+	Requires at least one attribute from the following:
+
+	init, sets the initial variables.
+	while, the true/false condition to check before every run. Stops after a false.
+	modify, what to do to the data after every run.
+
+	<tpl:for init="{$x} = 0" while="{$x} < 10" modify="{$x}++">
+		Counting to 10... {$x}<br />
+	</tpl:for>
 
 tpl:if
 ................................................................................

@@ -1,6 +1,15 @@
 TOX-G: Major changes
 ================================================================================
 
+Version post-0.1-alpha3
+--------------------------------------------------------------------------------
+ + Added <tpl:for init="" while="" modify=""> element
+    (include/toxgstandardelements.php)
+ + Added support for key=>value pairs in <tpl:foreach>
+    (include/toxgstandardelements.php)
+ + Added custom namespace support
+    (samples/sampletoxgtheme.php)
+
 Version 0.1-alpha1
 --------------------------------------------------------------------------------
  + Added common variables (which are used throughout all templates.)
