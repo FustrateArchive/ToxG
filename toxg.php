@@ -24,8 +24,9 @@ class Toxg
 	protected $compiled_list = array();
 	protected $_templates = array();
 	protected $_overlays = array();
+	protected $overlayCalls = array();
 
-	public function __construct($template_dir, $compile_dir, array $inherited_dirs = array(), $needs_compile = true)
+	public function __construct($template_dir, $compile_dir, array $inherited_dirs = array(), $needs_compile = null)
 	{
 		if (!is_null($needs_compile) && is_bool($needs_compile))
 			$this->needs_compile = $needs_compile;
@@ -55,6 +56,8 @@ class Toxg
 
 	public function callOverlays(array $name, array $ns)
 	{
+		$this->overlayCalls[] = is_array($name) ? implode('', $name) : $name . (is_array($ns) ? implode('', $ns) : $ns);
+
 		return $this->templates->callOverlays($name, $ns);
 	}
 
@@ -102,7 +105,7 @@ class Toxg
 
 	public function output()
 	{
-		$overlay_hash = substr(md5('dummy' . implode('', $this->_overlays)), 0, 25);
+		$overlay_hash = substr(md5('dummy' . implode('', $this->_overlays) . implode('', $this->overlayCalls)), 0, 25);
 
 		foreach ($this->_templates as $filename)
 		{
