@@ -184,7 +184,9 @@ class ToxgParser
 		$token->ns = 'tpl';
 		$token->nsuri = ToxgTemplate::TPL_NAMESPACE;
 		$token->attributes['value'] = $token->data;
-		$token->attributes['as'] = $this->inside_cdata ? 'raw' : 'html';
+
+		//!!! HACK to avoid htmlspecialchars in language cases
+		$token->attributes['as'] = $this->inside_cdata || substr($token->data, 0, 2) == '{#' ? 'raw' : 'html';
 
 		$this->parseTag($token);
 	}
