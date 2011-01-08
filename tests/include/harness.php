@@ -26,7 +26,7 @@ class ToxgTestHarness extends ToxgTemplate
 
 	public function addData($data)
 	{
-		$this->source_files[] = new ToxgSource($data, 'unit-test-file');
+		$this->source_files[] = ToxgSource::Factory($data, substr(md5($data), 0, 5) . '-unit-test-file');
 	}
 
 	public function addWrappedData($data)
@@ -41,7 +41,7 @@ class ToxgTestHarness extends ToxgTemplate
 
 	public function addOverlay($data)
 	{
-		$this->overlays[] = new ToxgOverlay(new ToxgSource($data, 'unit-test-overlay'));
+		$this->overlays[] = new ToxgOverlay(ToxgSource::Factory($data, substr(md5($data), 0, 5) . '-unit-test-overlay'));
 	}
 
 	public function addWrappedOverlay($data)

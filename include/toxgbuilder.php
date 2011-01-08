@@ -219,7 +219,7 @@ class ToxgBuilder
 				$token->toss('Template ' . $token->prettyName() . ' is missing the following attributes: ' . implode(', ', $required));
 
 			// The parameters arguements, unfortunately we can't check this and actually throw a error
-			$parameters = $template['parameters'];
+			$parameters = isset($template['parameters']) ? $template['parameters'] : array();
 			foreach ($parameters as $parameter)
 			{
 				$k = '\'' . addcslashes(ToxgExpression::makeVarName($parameter), '\\\'') . '\'';

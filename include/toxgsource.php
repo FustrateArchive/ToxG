@@ -53,14 +53,14 @@ class ToxgSource
 	public static function Factory($data, $file, $line = 1)
 	{
 		if (!isset(self::$cache[$file]))
-			$ret = self::$cache[$file] = new self($data, $file, $line);
-		else
-		{
-			$ret = clone self::$cache[$file];
-			$ret->resetTokenIndex();
-		}
+			self::$cache[$file] = new self($data, $file, $line);
 
-		return $ret;
+		return clone self::$cache[$file];
+	}
+
+	public function __clone()
+	{
+		$this->resetTokenIndex();
 	}
 
 	protected function __construct($data, $file, $line = 1)
@@ -68,16 +68,18 @@ class ToxgSource
 		if ($data === false)
 			throw new ToxgException('Unable to read template file.', $file, 0);
 
-		$this->data = $data;
 		$this->file = $file;
 		$this->line = $line;
 
 		// We simply store every piece of the file into the buffer and get rid of the resource,
 		// saves headache
-		if (is_resource($this->data))
-			while (!feof($this->data))
-				$this->data_buffer .= fread($this->data, 8092);
-		$this->data = null;
+		if (is_resource($data))
+			while (!feof($data))
+				$this->data_buffer .= fread($data, 8092);
+		else
+			$this->data_buffer = $data;
+
+		unset($data);
 	}
 
 	public function setNamespaces(array $uris)
@@ -104,13 +106,11 @@ class ToxgSource
 			return false;
 	}
 
-	public function readToken($t = false)
+	public function readToken()
 	{
 		$this->token_index++;
 		if ($this->isDataEOF() && isset($this->tokens[$this->token_index]))
-		{
 			return $this->tokens[$this->token_index];
-		}
 
 		if ($this->isDataEOF())
 		{
@@ -133,10 +133,10 @@ class ToxgSource
 
 	public function isEndOfTokens()
 	{
-		$ret = $this->readToken() === false;
-		$this->token_index--;
-
-		return $ret;
+		if ($this->isDataEOF())
+			return ($this->token_index >= (count($this->tokens) - 1));
+		else
+			return $this->isDataEOF();
 	}
 
 	protected function resetTokenIndex()
