@@ -300,7 +300,6 @@ class ToxgExpression
 
 	protected function toss($error)
 	{
-		echo var_dump($this->built);
 		$this->token->toss('Invalid expression ' . $this->data . ', ' . $error);
 	}
 
