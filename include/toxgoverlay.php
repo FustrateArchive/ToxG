@@ -13,7 +13,7 @@ class ToxgOverlay
 	protected $match_tree = array();
 	protected $match_recursion = array();
 
-	public function __construct($file)
+	public function __construct($file, array $called_overlays = array())
 	{
 		if ($file instanceof ToxgSource)
 			$this->source = $file;
@@ -33,6 +33,8 @@ class ToxgOverlay
 			'beforecontent' => array(),
 			'aftercontent' => array(),
 		);
+
+		$this->called_overlays = $called_overlays;
 	}
 
 	public function __destruct()
@@ -145,6 +147,14 @@ class ToxgOverlay
 		$this->parse_alter['line'] = $token->line;
 		$this->parse_alter['data'] = '';
 		$this->parse_alter['match'] = array();
+		$this->parse_alter['name'] = isset($token->attributes['name']) ? $token->attributes['name'] : false;
+		if ($this->parse_alter['name'] !== false)
+		{
+			list($ns, $name) = explode(':', $this->parse_alter['name']);
+			$nsuri = $token->getNamespace($ns);
+			if (empty($ns) || empty($name) || empty($nsuri))
+				$token->toss('Invalid name for tpl:alter');
+		}
 
 		// It can match more than one, and that's comma separated.
 		$matches = preg_split('~[ \t\r\n]+~', $token->attributes['match']);
@@ -167,6 +177,12 @@ class ToxgOverlay
 	protected function finalizeAlter()
 	{
 		$this->parse_state = 'outside';
+
+		if (!empty($this->parse_alter['name']) && !in_array($this->parse_alter['name'], $this->called_overlays))
+		{
+			$this->parse_alter = false;
+			return true;
+		}
 
 		$this->parse_alter['source'] = ToxgSource::Factory($this->parse_alter['data'], $this->parse_alter['file'] . implode('', $this->parse_alter['match']), $this->parse_alter['line']);
 		$this->parse_alter['source']->copyNamespaces($this->source);
@@ -229,6 +245,9 @@ class ToxgOverlay
 		$alters = $this->alters[$position];
 		foreach ($alters as $alter)
 		{
+			if (!$alter)
+				continue;
+
 			if (in_array($fqname, $alter['match']))
 				$parser->insertSource(clone $alter['source'], $defer === 'defer');
 		}

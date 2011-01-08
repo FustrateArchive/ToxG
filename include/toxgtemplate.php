@@ -13,6 +13,7 @@ class ToxgTemplate
 	protected $overlays = array();
 	protected $common_vars = array();
 	protected $debugging = true;
+	protected $overlayCalls = array();
 
 	public function __construct($source_file, $builder = null)
 	{
@@ -25,10 +26,16 @@ class ToxgTemplate
 		$this->source_files[] = $source_file;
 	}
 
+	public function callOverlays(array $overlays)
+	{
+		foreach ($overlays as $overlay)
+			$this->overlayCalls[] = $overlay;
+	}
+
 	public function addOverlays(array $files)
 	{
 		foreach ($files as $file)
-			$this->overlays[] = new ToxgOverlay($file);
+			$this->overlays[] = new ToxgOverlay($file, $this->overlayCalls);
 	}
 
 	public function setNamespaces(array $uris)

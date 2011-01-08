@@ -9,9 +9,19 @@ class ToxgTemplateList
 	protected $common_vars = array();
 	protected $debugging = true;
 	protected $templates = array();
+	protected $overlayCalls = array();
 
 	public function __construct()
 	{
+	}
+
+	public function callOverlays(array $overlays, array $ns)
+	{
+		$overlays = (array) $overlays;
+		$ns = (array) $ns;
+
+		foreach ($overlays as $k => $overlay)
+			$this->overlayCalls[] = $ns[$k] . ':' . $overlay;
 	}
 
 	public function addOverlays(array $files)
@@ -64,6 +74,7 @@ class ToxgTemplateList
 		foreach ($template['inherited_files'] as $file)
 			$object->addInheritedFile($file);
 
+		$object->callOverlays($this->overlayCalls);
 		$object->addOverlays($this->overlays);
 		$object->setNamespaces($this->namespaces);
 		$object->setCommonVars($this->common_vars);
