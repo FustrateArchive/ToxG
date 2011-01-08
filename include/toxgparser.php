@@ -93,7 +93,7 @@ class ToxgParser
 	protected function verifyClosed()
 	{
 		if (!empty($this->tree))
-		{die(print_r($this->primary));
+		{
 			$token = array_pop($this->tree);
 			throw new ToxgException('Unclosed element ' . $token->prettyName() . ' started at ' . $token->file . ', line ' . $token->line . '.', '', 0);
 		}
@@ -170,7 +170,7 @@ class ToxgParser
 		if ($this->last_template === null)
 		{
 			if (trim($token->data) !== '')
-				die(print_r($token));
+				$token->toss('Unexpected content outside any template definition.');
 		}
 		else
 			$this->fire('parsedContent', array($token));
