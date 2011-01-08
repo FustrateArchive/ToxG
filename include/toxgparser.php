@@ -75,7 +75,7 @@ class ToxgParser
 			while (!$source->isEndOfTokens())
 				$this->parseNextSource();
 		}
-		// Just need to process a token the once.
+		// Just need to process the token once.
 		else
 			$this->parseNextSource();
 	}
@@ -184,9 +184,7 @@ class ToxgParser
 		$token->ns = 'tpl';
 		$token->nsuri = ToxgTemplate::TPL_NAMESPACE;
 		$token->attributes['value'] = $token->data;
-
-		//!!! HACK to avoid htmlspecialchars in language cases
-		$token->attributes['as'] = $this->inside_cdata || substr($token->data, 0, 2) == '{#' ? 'raw' : 'html';
+		$token->attributes['as'] = $this->inside_cdata ? 'raw' : 'html';
 
 		$this->parseTag($token);
 	}

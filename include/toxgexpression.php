@@ -8,6 +8,7 @@ class ToxgExpression
 	protected $unterminated_string = false;
 	protected $token = null;
 	protected $built = array();
+	protected $is_raw = false;
 
 	public function __construct($data, ToxgToken $token)
 	{
@@ -57,7 +58,7 @@ class ToxgExpression
 		return $this->getCode();
 	}
 
-	public function parseNormal()
+	public function parseNormal($accept_raw = false)
 	{
 		// An empty string, let's short-circuit this common case.
 		if ($this->data_len === 0)
@@ -77,7 +78,10 @@ class ToxgExpression
 			}
 		}
 
-		return $this->getCode();
+		if ($this->is_raw && $accept_raw)
+			return array($this->getCode(), true);
+		else
+			return $this->getCode();
 	}
 
 	public function getCode()
@@ -234,11 +238,37 @@ class ToxgExpression
 			$this->readLangRef($end);
 			break;
 
+		// Is it "raw"? If so, we remove htmlspecialchars
+		case 'r':
+			$this->readRawRef($end, $require);
+			break;
+
 		default:
 			if ($require && $this->data_pos == $end)
 				$this->toss('incomplete expression.');
 			$this->readString($end);
 		}
+	}
+
+	protected function readRawRef($end, $require)
+	{
+		$string = substr($this->data, $this->data_pos, 3);
+
+		if ($string == 'raw')
+		{
+			unset($this->built[count($this->built) - 1]);
+
+			$this->data_pos = $end;
+			$this->is_raw = true;
+		}
+		else
+		{
+			if ($require && $this->data_pos == $end)
+				$this->toss('incomplete expression.');
+			$this->readString($end);
+		}
+
+		return true;
 	}
 
 	protected function readLangRef($end)
@@ -299,7 +329,7 @@ class ToxgExpression
 	}
 
 	protected function toss($error)
-	{
+	{die(print_r($this->built));
 		$this->token->toss('Invalid expression ' . $this->data . ', ' . $error);
 	}
 
@@ -359,15 +389,15 @@ class ToxgExpression
 		return $expr->parseInterpolated();
 	}
 
-	public static function normal($string, ToxgToken $token)
+	public static function normal($string, ToxgToken $token, $accept_raw = false)
 	{
-		return self::boolean($string, $token);
+		return self::boolean($string, $token, $accept_raw);
 	}
 
-	public static function boolean($string, ToxgToken $token)
+	public static function boolean($string, ToxgToken $token, $accept_raw = false)
 	{
 		$expr = new ToxgExpression($string, $token);
-		return $expr->parseNormal();
+		return $expr->parseNormal($accept_raw);
 	}
 
 	public static function makeVarName($name)

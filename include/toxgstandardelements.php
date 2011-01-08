@@ -76,11 +76,14 @@ class ToxgStandardElements
 		$this->requireEmpty($token);
 		$this->requireAttributes(array('value', 'as'), $token);
 
-		$expr = ToxgExpression::normal($attributes['value'], $token);
+		$expr = ToxgExpression::normal($attributes['value'], $token, true);
+		$raw = is_array($expr) && $expr[1] === true;
+		if (is_array($expr))
+			$expr = $expr[0];
 
-		if ($attributes['as'] === 'html')
+		if ($attributes['as'] === 'html' && !$raw)
 			$builder->emitOutputParam('htmlspecialchars(' . $expr . ')', $token);
-		elseif ($attributes['as'] === 'raw')
+		elseif ($attributes['as'] === 'raw' || $raw)
 			$builder->emitOutputParam('(' . $expr . ')', $token);
 		else
 			$token->toss('Invalid value for as attribute: expecting html or raw.');
