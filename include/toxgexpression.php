@@ -329,7 +329,7 @@ class ToxgExpression
 	}
 
 	protected function toss($error)
-	{die(print_r($this->built));
+	{
 		$this->token->toss('Invalid expression ' . $this->data . ', ' . $error);
 	}
 
