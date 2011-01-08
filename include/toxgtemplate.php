@@ -4,7 +4,7 @@ class ToxgTemplate
 {
 	const VERSION = "0.1-alpha1";
 	// !!! Need a domain name/final name/etc.?
-	const TPL_NAMESPACE = 'ns';
+	const TPL_NAMESPACE = 'urn:toxg:template';
 
 	protected $source_files = array();
 	protected $builder = null;
