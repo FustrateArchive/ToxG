@@ -25,6 +25,7 @@ class Toxg
 	protected $_templates = array();
 	protected $_overlays = array();
 	protected $overlayCalls = array();
+	protected $common_vars = array();
 
 	public function __construct($template_dir, $compile_dir, array $inherited_dirs = array(), $needs_compile = null)
 	{
@@ -38,7 +39,6 @@ class Toxg
 		$this->templates = new ToxgTemplateList();
 
 		$this->namespaces = array(
-			'sidebar' => 'urn:ns:site',
 			'site' => $this->nsuri,
 			'tpl' => ToxgTemplate::TPL_NAMESPACE,
 		);
@@ -96,6 +96,11 @@ class Toxg
 		$this->inside = array();
 	}
 
+	public function addCommonVars(array $vars)
+	{
+		$this->common_vars = array_merge((array) $vars, $this->common_vars);
+	}
+
 	public function addNamespace($name, $nsuri = null)
 	{
 		$nsuri = is_null($nsuri) ? 'urn:ns:' . $name : $nsuri;
@@ -105,6 +110,8 @@ class Toxg
 
 	public function output()
 	{
+		$this->_templates->setCommonVars($this->common_vars);
+
 		$overlay_hash = substr(md5('dummy' . implode('', $this->_overlays) . implode('', $this->overlayCalls)), 0, 25);
 
 		foreach ($this->_templates as $filename)
