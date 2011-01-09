@@ -110,7 +110,7 @@ class Toxg
 
 	public function output()
 	{
-		$this->_templates->setCommonVars($this->common_vars);
+		$this->templates->setCommonVars($this->common_vars);
 
 		$overlay_hash = substr(md5('dummy' . implode('', $this->_overlays) . implode('', $this->overlayCalls)), 0, 25);
 
