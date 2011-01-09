@@ -26,12 +26,36 @@ class ToxgStandardElements
 			'json',
 			'default',
 			'call',
+			'cycle',
 			'template-push',
 			'template-pop',
 		);
 
 		foreach ($tags as $tag)
 			$template->listenEmitBasic($tag, array($inst, 'tpl_' . str_replace('-', '_', $tag)));
+	}
+
+	// Very useful for alternating backgrounds
+	public function tpl_cycle(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
+	{
+		$this->requireAttributes(array('values'), $token);
+
+		// Generate random variables for cycle variables
+		$base = md5(isset($attributes['id']) ? $attributes['id'] : rand(100, 100000));
+		$cycle_array = '$cycle_' . $base;
+		$cycle_counter = '$cycle_counter_' . $base;
+
+		$values = explode(',', $attributes['values']);
+		foreach ($values as $k => $val)
+			$values[$k] = ToxgExpression::stringWithvars($val, $token);
+
+		// Generate the code
+		$builder->emitCode('if (!isset(' . $cycle_array . ')) {', $token);
+		$builder->emitCode($cycle_array . ' = array(' . implode(',', $values) . '); ' . $cycle_counter . ' = 0;', $token);
+		$builder->emitCode('} else {', $token);
+		$builder->emitCode($cycle_counter . '++; } if (' . $cycle_counter . ' > count(' . $cycle_array . ') - 1) {', $token);
+		$builder->emitCode($cycle_counter . ' = 0;', $token);
+		$builder->emitCode('} echo ' . $cycle_array . '[' . $cycle_counter . '];', $token);
 	}
 
 	public function tpl_call(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
