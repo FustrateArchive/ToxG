@@ -53,14 +53,14 @@ class ToxgSource
 	public static function Factory($data, $file, $line = 1)
 	{
 		if (!isset(self::$cache[$file]))
-			$ret = self::$cache[$file] = new self($data, $file, $line);
+			return self::$cache[$file] = new self($data, $file, $line);
 		else
-		{
-			$ret = clone self::$cache[$file];
-			$ret->resetTokenIndex();
-		}
+			return clone self::$cache[$file];
+	}
 
-		return $ret;
+	public function __clone()
+	{
+		$this->resetTokenIndex();
 	}
 
 	protected function __construct($data, $file, $line = 1)
@@ -68,16 +68,18 @@ class ToxgSource
 		if ($data === false)
 			throw new ToxgException('Unable to read template file.', $file, 0);
 
-		$this->data = $data;
 		$this->file = $file;
 		$this->line = $line;
 
 		// We simply store every piece of the file into the buffer and get rid of the resource,
 		// saves headache
-		if (is_resource($this->data))
-			while (!feof($this->data))
-				$this->data_buffer .= fread($this->data, 8092);
-		$this->data = null;
+		if (is_resource($data))
+			while (!feof($data))
+				$this->data_buffer .= fread($data, 8092);
+		else
+			$this->data_buffer = $data;
+
+		unset($data);
 	}
 
 	public function setNamespaces(array $uris)
@@ -104,13 +106,11 @@ class ToxgSource
 			return false;
 	}
 
-	public function readToken($t = false)
+	public function readToken()
 	{
 		$this->token_index++;
 		if ($this->isDataEOF() && isset($this->tokens[$this->token_index]))
-		{
 			return $this->tokens[$this->token_index];
-		}
 
 		if ($this->isDataEOF())
 		{
@@ -133,10 +133,9 @@ class ToxgSource
 
 	public function isEndOfTokens()
 	{
-		$ret = $this->readToken() === false;
-		$this->token_index--;
-
-		return $ret;
+		if (($ret = $this->isDataEOF()) === true)
+			return ($this->token_index >= (count($this->tokens) - 1));
+		return false;
 	}
 
 	protected function resetTokenIndex()
@@ -230,7 +229,7 @@ class ToxgSource
 		if ($ns === false)
 			return $this->readContent(1);
 
-		return $this->readGenericTag('tag', '>', 1 + strlen($ns) + 1);
+		return $this->readGenericTag('tag', '>', '<', 1 + strlen($ns) + 1);
 	}
 
 	protected function readCurlyToken()
@@ -276,10 +275,29 @@ class ToxgSource
 		}
 
 		// Now it's time to parse a tag, lang, or var.
-		return $this->readGenericTag($type, '}', 1);
+		return $this->readGenericTag($type, '}', '{', 1);
 	}
 
-	protected function readGenericTag($type, $end_c, $offset)
+	protected function findClose($close_tag, $stack_tag, $offset = 0, $ignore_quote = false)
+	{
+		// Find the closing tag
+		$stack = 0;
+		$stack_tag = (array) $stack_tag;
+		$close_tag = (array) $close_tag;
+		for ($pos = $offset; $pos < strlen($this->data_buffer); $pos++)
+		{
+			if (in_array($this->data_buffer[$pos], $close_tag) && empty($stack))
+				return $pos;
+			elseif (in_array($this->data_buffer[$pos], $close_tag))
+				$stack--;
+			elseif (in_array($this->data_buffer[$pos], $stack_tag))
+				$stack++;
+		}
+
+		return false;
+	}
+
+	protected function readGenericTag($type, $end_c, $stack_c, $offset)
 	{
 		// Now it's time to parse a tag.  Start after any namespace/</etc. we already found.
 		$end_pos = $this->data_pos + $offset;
@@ -287,7 +305,7 @@ class ToxgSource
 		while ($end_pos < $finality)
 		{
 			// The only way to end a tag is >/}, but we respect quotes too.
-			$end_bracket = strpos($this->data_buffer, $end_c, $end_pos);
+			$end_bracket = $this->findClose($end_c, $stack_c, $end_pos);
 			$quote = strpos($this->data_buffer, '"', $end_pos);
 
 			// If the > is before the ", we're done.
@@ -383,5 +401,4 @@ class ToxgSource
 		return true;
 	}
 }
-
 ?>
