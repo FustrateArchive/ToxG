@@ -184,7 +184,7 @@ class ToxgOverlay
 			return true;
 		}
 
-		$this->parse_alter['source'] = ToxgSource::Factory($this->parse_alter['data'], $this->parse_alter['file'] . implode('', $this->parse_alter['match']), $this->parse_alter['line']);
+		$this->parse_alter['source'] = ToxgSource::Factory($this->parse_alter['data'], $this->parse_alter['file'] . ':' . md5($this->parse_alter['data']), $this->parse_alter['line']);
 		$this->parse_alter['source']->copyNamespaces($this->source);
 	}
 
