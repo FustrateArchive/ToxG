@@ -136,6 +136,7 @@ class ToxgParser
 
 		case 'var-ref':
 		case 'lang-ref':
+		case 'output-ref':
 			$this->parseRef($token);
 			break;
 
@@ -178,6 +179,9 @@ class ToxgParser
 
 	protected function parseRef(ToxgToken $token)
 	{
+		if ($token->type == 'output-ref')
+			$token->data = substr($token->data, 1, strlen($token->data) - 2);
+
 		// Make the tag look like a normal tag.
 		$token->type = 'tag-empty';
 		$token->name = 'output';

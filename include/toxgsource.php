@@ -270,6 +270,13 @@ class ToxgSource
 			else
 				$ns = false;
 
+			if ($ns === false)
+			{
+				$check = trim($this->data_buffer[$this->data_pos + 1]);
+				if (!empty($check))
+					$type = 'output-ref';
+			}
+
 			if ($ns === false && $type === 'tag')
 				return $this->readContent(1);
 		}
