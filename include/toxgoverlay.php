@@ -143,10 +143,11 @@ class ToxgOverlay
 		$this->parse_state = 'alter';
 		$this->parse_alter = &$this->alters[$token->attributes['position']][];
 
+		$this->parse_alter['token'] = $token;
 		$this->parse_alter['file'] = $token->file;
 		$this->parse_alter['line'] = $token->line;
 		$this->parse_alter['data'] = '';
-		$this->parse_alter['match'] = array();
+		$this->parse_alter['match'] = $token->attributes['match'];
 		$this->parse_alter['name'] = isset($token->attributes['name']) ? $token->attributes['name'] : false;
 		if ($this->parse_alter['name'] !== false)
 		{
@@ -154,23 +155,6 @@ class ToxgOverlay
 			$nsuri = $token->getNamespace($ns);
 			if (empty($ns) || empty($name) || empty($nsuri))
 				$token->toss('Invalid name for tpl:alter');
-		}
-
-		// It can match more than one, and that's comma separated.
-		$matches = preg_split('~[ \t\r\n]+~', $token->attributes['match']);
-		foreach ($matches as $match)
-		{
-			if (strpos($match, ':') === false)
-				$token->toss('Every matched element should have a namespace, ' . $match . ' didn\'t have one.');
-
-			list ($ns, $name) = explode(':', $match, 2);
-
-			$nsuri = $token->getNamespace($ns);
-			if ($nsuri === false)
-				$token->toss('You need to declare namespaces even for matched elements (' . $ns . ' was undeclared.)');
-
-			// Just store it "fully qualified"...
-			$this->parse_alter['match'][] = $nsuri . ':' . $name;
 		}
 	}
 
@@ -182,6 +166,24 @@ class ToxgOverlay
 		{
 			$this->parse_alter = false;
 			return true;
+		}
+
+		// Load the matches now, we don't do it previously anymore because an alter not called may not have any alters
+		$matches = preg_split('~[ \t\r\n]+~', $this->parse_alter['match']);
+		$this->parse_alter['match'] = array();
+		foreach ($matches as $match)
+		{
+			if (strpos($match, ':') === false)
+				$this->parse_alter['token']->toss('Every matched element should have a namespace, ' . $match . ' didn\'t have one.');
+
+			list ($ns, $name) = explode(':', $match, 2);
+
+			$nsuri = $this->parse_alter['token']->getNamespace($ns);
+			if ($nsuri === false)
+				$this->parse_alter['token']->toss('You need to declare namespaces even for matched elements (' . $ns . ' was undeclared.)');
+
+			// Just store it "fully qualified"...
+			$this->parse_alter['match'][] = $nsuri . ':' . $name;
 		}
 
 		$this->parse_alter['source'] = ToxgSource::Factory($this->parse_alter['data'], $this->parse_alter['file'] . ':' . md5($this->parse_alter['data']), $this->parse_alter['line']);
