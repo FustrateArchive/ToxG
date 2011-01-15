@@ -189,6 +189,11 @@ class ToxgStandardElements
 	public function tpl_if(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
 	{
 		$this->requireNotEmpty($token);
+		if (!empty($attributes['default']))
+		{
+			$attributes['test'] = $token->attributes['default'];
+			$token->attributes['test'] = $token->attributes['default'];
+		}
 		$this->requireAttributes(array('test'), $token);
 
 		if ($type === 'tag-start')
@@ -205,6 +210,9 @@ class ToxgStandardElements
 	public function tpl_else(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
 	{
 		$this->requireEmpty($token);
+
+		if (!empty($attributes['default']))
+			$attributes['test'] = $token->attributes['default'];
 
 		if (isset($attributes['test']))
 		{
