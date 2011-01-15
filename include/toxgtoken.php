@@ -71,6 +71,9 @@ class ToxgToken
 		$this->data_pos = 1;
 		list ($this->ns, $this->name) = $this->parseName();
 
+		// Parse the attributes which don't have any name specified, mainly for shortcuts
+		$this->parseSingleAttribute($this->data_pos);
+
 		while ($this->parseAttribute())
 			continue;
 
@@ -78,8 +81,22 @@ class ToxgToken
 
 		// A start tag will be 1 from end, empty tag 2 from end (/>)...
 		$end_offset = $this->type == 'tag-start' ? 1 : 2;
+
 		if ($this->data_pos < strlen($this->data) - $end_offset)
 			throw new ToxgException('Malformed attributes or unclosed tag.', $this->file, $this->line);
+
+	}
+
+	protected function parseSingleAttribute($pos = 0)
+	{
+		$start_quote = $this->firstPosOf('"', $this->data_pos - $pos);
+		if ($start_quote === false || $this->data[$start_quote - 1] == '=')
+			return false;
+		$start_part = substr($this->data, 0, $start_quote);
+		$end_part = substr($this->data, $start_quote);
+
+		$this->data = $start_part . 'default=' . $end_part;
+		return true;
 	}
 
 	protected function parseEnd()
