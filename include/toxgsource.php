@@ -53,9 +53,9 @@ class ToxgSource
 	public static function Factory($data, $file, $line = 1)
 	{
 		if (!isset(self::$cache[$file]))
-			return self::$cache[$file] = new self($data, $file, $line);
-		else
-			return clone self::$cache[$file];
+			self::$cache[$file] = new self($data, $file, $line);
+
+		return clone self::$cache[$file];
 	}
 
 	public function __clone()
@@ -133,9 +133,10 @@ class ToxgSource
 
 	public function isEndOfTokens()
 	{
-		if (($ret = $this->isDataEOF()) === true)
+		if ($this->isDataEOF())
 			return ($this->token_index >= (count($this->tokens) - 1));
-		return false;
+		else
+			return $this->isDataEOF();
 	}
 
 	protected function resetTokenIndex()
