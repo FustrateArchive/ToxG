@@ -118,32 +118,12 @@ class ToxgExpression
 		$this->readString($pos);
 	}
 
-	protected function findClose($close_tag, $stack_tag, $offset = 0)
-	{
-		// Find the closing tag
-		$stack = 0;
-		$stack_tag = (array) $stack_tag;
-		$close_tag = (array) $close_tag;
-		for ($pos = $this->data_pos + $offset; $pos < strlen($this->data); $pos++)
-		{
-			if (in_array($this->data[$pos], $close_tag) && empty($stack))
-				return $pos;
-			elseif (in_array($this->data[$pos], $close_tag))
-				$stack--;
-			elseif (in_array($this->data[$pos], $stack_tag))
-				$stack++;
-		}
-
-		return false;
-	}
-
 	protected function readReference($allow_lang = true)
 	{
 		// Expect to be on a {.
 		$this->data_pos++;
 
-		$pos = $this->findClose('}', '{');
-
+		$pos = $this->firstPosOf('}');
 		if ($pos === false)
 			$this->toss('unmatched braces.');
 
@@ -263,18 +243,6 @@ class ToxgExpression
 			$this->readRawRef($end, $require);
 			break;
 
-		case '{':
-			$data = substr($this->data, $this->data_pos, ($this->findClose('}', '{', 1) - $this->data_pos) + 1);
-			$token = clone $this->token;
-
-			$token->data = $data;
-
-			$expr = ToxgExpression::stringWithVars($data, $token);
-			$this->data_pos = $this->findClose('}', '{', 1) + 1;
-
-			$this->built[] = $expr;
-			break;
-
 		default:
 			if ($require && $this->data_pos == $end)
 				$this->toss('incomplete expression.');
@@ -313,6 +281,21 @@ class ToxgExpression
 		while ($this->data_pos < $end)
 		{
 			$next = $this->firstPosOf(array(':'), 1);
+
+			// If this is a quoted string, we continue over
+			if ($this->firstPosOf(array('"')) == $this->data_pos + 1 && !$this->unterminated_string)
+			{
+				$next = $this->firstPosOf(array('"'), 2);
+				$this->data_pos++;
+				$this->unterminated_string = true;
+			}
+			// Or a quoted string is coming to an end
+			elseif ($this->unterminated_string && $this->data_pos == $this->firstPosOf(array('"')))
+			{
+				$this->data_pos = $this->firstPosOf(array('"')) + 1;
+				$next = $this->firstPosOf(array(':'), 1);
+				$this->unterminated_string = false;
+			}
 
 			if ($next === false || $next > $end)
 				$next = $end;

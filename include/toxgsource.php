@@ -229,7 +229,7 @@ class ToxgSource
 		if ($ns === false)
 			return $this->readContent(1);
 
-		return $this->readGenericTag('tag', '>', '<', 1 + strlen($ns) + 1);
+		return $this->readGenericTag('tag', '>', 1 + strlen($ns) + 1);
 	}
 
 	protected function readCurlyToken()
@@ -282,29 +282,10 @@ class ToxgSource
 		}
 
 		// Now it's time to parse a tag, lang, or var.
-		return $this->readGenericTag($type, '}', '{', 1);
+		return $this->readGenericTag($type, '}', 1);
 	}
 
-	protected function findClose($close_tag, $stack_tag, $offset = 0)
-	{
-		// Find the closing tag
-		$stack = 0;
-		$stack_tag = (array) $stack_tag;
-		$close_tag = (array) $close_tag;
-		for ($pos = $this->data_pos + $offset; $pos < strlen($this->data_buffer); $pos++)
-		{
-			if (in_array($this->data_buffer[$pos], $close_tag) && empty($stack))
-				return $pos;
-			elseif (in_array($this->data_buffer[$pos], $close_tag))
-				$stack--;
-			elseif (in_array($this->data_buffer[$pos], $stack_tag))
-				$stack++;
-		}
-
-		return false;
-	}
-
-	protected function readGenericTag($type, $end_c, $stack_c, $offset)
+	protected function readGenericTag($type, $end_c, $offset)
 	{
 		// Now it's time to parse a tag.  Start after any namespace/</etc. we already found.
 		$end_pos = $this->data_pos + $offset;
@@ -312,7 +293,7 @@ class ToxgSource
 		while ($end_pos < $finality)
 		{
 			// The only way to end a tag is >/}, but we respect quotes too.
-			$end_bracket = $this->findClose($end_c, $stack_c, $offset);
+			$end_bracket = strpos($this->data_buffer, $end_c, $end_pos);
 			$quote = strpos($this->data_buffer, '"', $end_pos);
 
 			// If the > is before the ", we're done.
