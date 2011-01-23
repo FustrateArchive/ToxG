@@ -5,7 +5,6 @@ class ToxgExpression
 	protected $data = null;
 	protected $data_len = 0;
 	protected $data_pos = 0;
-	protected $unterminated_string = false;
 	protected $token = null;
 	protected $built = array();
 	protected $is_raw = false;
@@ -281,22 +280,6 @@ class ToxgExpression
 		while ($this->data_pos < $end)
 		{
 			$next = $this->firstPosOf(array(':'), 1);
-
-			// If this is a quoted string, we continue over
-			if ($this->firstPosOf(array('"')) == $this->data_pos + 1 && !$this->unterminated_string)
-			{
-				$next = $this->firstPosOf(array('"'), 2);
-				$this->data_pos++;
-				$this->unterminated_string = true;
-			}
-			// Or a quoted string is coming to an end
-			elseif ($this->unterminated_string && $this->data_pos == $this->firstPosOf(array('"')))
-			{
-				$this->data_pos = $this->firstPosOf(array('"')) + 1;
-				$next = $this->firstPosOf(array(':'), 1);
-				$this->unterminated_string = false;
-			}
-
 			if ($next === false || $next > $end)
 				$next = $end;
 
@@ -330,7 +313,6 @@ class ToxgExpression
 
 	protected function toss($error)
 	{
-		echo var_dump($this->built);
 		$this->token->toss('Invalid expression ' . $this->data . ', ' . $error);
 	}
 

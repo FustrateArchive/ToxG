@@ -217,14 +217,6 @@ class ToxgBuilder
 			$required = array_diff($template['requires'], $arg_names);
 			if (!empty($required))
 				$token->toss('Template ' . $token->prettyName() . ' is missing the following attributes: ' . implode(', ', $required));
-
-			// The parameters arguements, unfortunately we can't check this and actually throw a error
-			$parameters = isset($template['parameters']) ? $template['parameters'] : array();
-			foreach ($parameters as $parameter)
-			{
-				$k = '\'' . addcslashes(ToxgExpression::makeVarName($parameter), '\\\'') . '\'';
-				$args[] = $k . ' => ' . ToxgExpression::variable('{$' . $parameter . '}', $token);
-			}
 		}
 
 		if ($token->type == 'tag-start' || $token->type == 'tag-empty')
