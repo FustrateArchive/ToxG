@@ -133,10 +133,10 @@ class ToxgSource
 
 	public function isEndOfTokens()
 	{
-		if ($this->isDataEOF())
-			return ($this->token_index >= (count($this->tokens) - 1));
-		else
-			return $this->isDataEOF();
+		$ret = $this->readToken() === false;
+		$this->token_index--;
+
+		return $ret;
 	}
 
 	protected function resetTokenIndex()
