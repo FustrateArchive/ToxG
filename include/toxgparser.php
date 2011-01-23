@@ -24,7 +24,7 @@ class ToxgParser
 				throw new ToxgException('Unable to open template file: ' . $file, '', 0);
 			}
 
-			$this->primary = ToxgSource::Factory($this->primary_fp, $file);
+			$this->primary = new ToxgSource($this->primary_fp, $file);
 		}
 	}
 
@@ -72,7 +72,7 @@ class ToxgParser
 
 		if ($source instanceof ToxgSource)
 		{
-			while (!$source->isEndOfTokens())
+			while (!$source->isDataEOF())
 				$this->parseNextSource();
 		}
 		// Just need to process the token once.

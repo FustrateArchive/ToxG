@@ -38,6 +38,9 @@
  */
 class ToxgSource
 {
+	// !!! Allow longer?
+	const MAX_TAG_LENGTH = 2048;
+	const BUFFER_APPEND_LENGTH = 4096;
 
 	protected $data = null;
 	protected $data_pos = 0;
@@ -46,24 +49,8 @@ class ToxgSource
 	protected $line = 1;
 	protected $namespaces = array();
 	protected $wait_comment = false;
-	protected static $cache = array();
-	protected $tokens = array();
-	protected $token_index = -1;
 
-	public static function Factory($data, $file, $line = 1)
-	{
-		if (!isset(self::$cache[$file]))
-			$ret = self::$cache[$file] = new self($data, $file, $line);
-		else
-		{
-			$ret = clone self::$cache[$file];
-			$ret->resetTokenIndex();
-		}
-
-		return $ret;
-	}
-
-	protected function __construct($data, $file, $line = 1)
+	public function __construct($data, $file, $line = 1)
 	{
 		if ($data === false)
 			throw new ToxgException('Unable to read template file.', $file, 0);
@@ -72,12 +59,9 @@ class ToxgSource
 		$this->file = $file;
 		$this->line = $line;
 
-		// We simply store every piece of the file into the buffer and get rid of the resource,
-		// saves headache
-		if (is_resource($this->data))
-			while (!feof($this->data))
-				$this->data_buffer .= fread($this->data, 8092);
-		$this->data = null;
+		// For simplicity, we treat a string source as the buffer most of the time.
+		if (!is_resource($this->data))
+			$this->data_buffer = &$this->data;
 	}
 
 	public function setNamespaces(array $uris)
@@ -104,14 +88,8 @@ class ToxgSource
 			return false;
 	}
 
-	public function readToken($t = false)
+	public function readToken()
 	{
-		$this->token_index++;
-		if ($this->isDataEOF() && isset($this->tokens[$this->token_index]))
-		{
-			return $this->tokens[$this->token_index];
-		}
-
 		if ($this->isDataEOF())
 		{
 			if ($this->wait_comment !== false)
@@ -119,29 +97,38 @@ class ToxgSource
 			return false;
 		}
 
-		$this->tokens[$this->token_index] = $this->readStringToken();
-
-		return $this->tokens[$this->token_index];
+		if (is_resource($this->data))
+			return $this->readStreamToken();
+		else
+			return $this->readStringToken();
 	}
 
 	public function isDataEOF()
 	{
 		if ($this->data_pos < strlen($this->data_buffer))
 			return false;
+
+		if (is_resource($this->data))
+		{
+			if (!feof($this->data))
+				return false;
+		}
 		return true;
 	}
 
-	public function isEndOfTokens()
+	protected function readStreamToken()
 	{
-		$ret = $this->readToken() === false;
-		$this->token_index--;
+		// Extend the buffer when it gets too small.  We won't allow an element longer than 2048 bytes.
+		if (strlen($this->data_buffer) - $this->data_pos < self::MAX_TAG_LENGTH)
+		{
+			$this->data_buffer = substr($this->data_buffer, $this->data_pos) . fread($this->data, self::BUFFER_APPEND_LENGTH);
+			$this->data_pos = 0;
+		}
 
-		return $ret;
-	}
+		if (strlen($this->data_buffer) == 0)
+			return false;
 
-	protected function resetTokenIndex()
-	{
-		$this->token_index = -1;
+		return $this->readStringToken();
 	}
 
 	protected function readStringToken()

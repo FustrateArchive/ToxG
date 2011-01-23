@@ -4,7 +4,6 @@ class ToxgOverlay
 {
 	const RECURSION_LIMIT = 10;
 
-	protected static $parsedSources = array();
 	protected $source = null;
 	protected $source_fp = null;
 	protected $alters = array();
@@ -23,7 +22,7 @@ class ToxgOverlay
 			if (!$this->source_fp)
 				throw new ToxgException('Unable to open overlay file: ' . $file, '', 0);
 
-			$this->source = ToxgSource::Factory($this->source_fp, $file);
+			$this->source = new ToxgSource($this->source_fp, $file);
 		}
 
 		// This array is indexed by position.
@@ -186,7 +185,7 @@ class ToxgOverlay
 			$this->parse_alter['match'][] = $nsuri . ':' . $name;
 		}
 
-		$this->parse_alter['source'] = ToxgSource::Factory($this->parse_alter['data'], $this->parse_alter['file'] . ':' . md5($this->parse_alter['data']), $this->parse_alter['line']);
+		$this->parse_alter['source'] = new ToxgSource($this->parse_alter['data'], $this->parse_alter['file'], $this->parse_alter['line']);
 		$this->parse_alter['source']->copyNamespaces($this->source);
 	}
 
