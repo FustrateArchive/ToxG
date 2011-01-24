@@ -54,7 +54,6 @@ class ToxgTestList
 			$failure = $e->getMessage();
 		}
 
-		// !!! Do some reporting on time taken?  Slowest tests?
 		$et = microtime(true);
 		$time = $et - $st;
 

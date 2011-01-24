@@ -98,10 +98,31 @@ function test_alter_006($harness)
 function test_alter_007($harness)
 {
 	$harness->addDataForOverlay();
-	$harness->addOverlay('<tpl:alter match="my:output my:example" position="aftercontent">test1</tpl:alter>');
-	$harness->addOverlay('<tpl:alter match="my:output my:example" position="aftercontent">test2</tpl:alter>');
-	$harness->addOverlay('<tpl:alter match="my:output my:example" position="aftercontent">test3</tpl:alter>');
-	$harness->addOverlay('<tpl:alter match="my:output my:example" position="aftercontent">test4</tpl:alter>');
+	$harness->addOverlay('<tpl:alter match="my:output my:example" position="beforecontent">test1</tpl:alter>');
+	$harness->addOverlay('<tpl:alter match="my:output my:example" position="beforecontent">test2</tpl:alter>');
+	$harness->addOverlay('<tpl:alter match="my:output my:example" position="beforecontent">test3</tpl:alter>');
+	$harness->addOverlay('<tpl:alter match="my:output my:example" position="beforecontent">test4</tpl:alter>');
+}
+
+function test_alter_008($harness)
+{
+	$harness->addDataForOverlay();
+	$harness->addOverlay('<tpl:alter match="my:output my:example" position="before"><tpl:if test="true"></tpl:alter>');
+	$harness->addOverlay('<tpl:alter match="my:output my:example" position="beforecontent"></tpl:if></tpl:alter>');
+}
+
+function test_alter_009($harness)
+{
+	$harness->addData('
+		<tpl:template name="my:output">Stuff.</tpl:template>
+		<tpl:alter match="my:output" position="before">Hello.</tpl:alter>
+		<tpl:alter match="my:output" position="after">Goodbye.</tpl:alter>');
+}
+
+function test_alter_010($harness)
+{
+	$harness->addData('<tpl:template name="my:stuff"></tpl:template>');
+	$harness->addOverlay('<tpl:alter match="my:stuff" position="after" xmlns:blah="http://www.example.com/#blah0"><blah:checkme /></tpl:alter>');
 }
 
 ?>

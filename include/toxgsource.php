@@ -53,15 +53,41 @@ class ToxgSource
 	public function __construct($data, $file, $line = 1)
 	{
 		if ($data === false)
-			throw new ToxgException('Unable to read template file.', $file, 0);
+			throw new ToxgExceptionFile($file, 0, 'parsing_cannot_read');
+		if (!is_resource($data) && !is_string($data) && !is_array($data))
+			throw new ToxgExceptionFile($file, 0, 'parsing_not_supported', gettype($data));
 
 		$this->data = $data;
 		$this->file = $file;
 		$this->line = $line;
 
 		// For simplicity, we treat a string source as the buffer most of the time.
-		if (!is_resource($this->data))
+		if (is_string($this->data))
 			$this->data_buffer = &$this->data;
+	}
+
+	public function __destruct()
+	{
+	}
+
+	public function initialize()
+	{
+		// Don't do anything if we're already at the beginning.
+		if ($this->data_pos > 0)
+		{
+			$this->data_pos = 0;
+
+			// For resources, we have to seek.
+			if (is_resource($this->data))
+			{
+				if (!@rewind($this->data))
+					throw new ToxgExceptionFile($this->file, 0, 'parsing_cannot_seek');
+
+				$this->data_buffer = '';
+			}
+
+			$this->line = 1;
+		}
 	}
 
 	public function setNamespaces(array $uris)
@@ -93,18 +119,26 @@ class ToxgSource
 		if ($this->isDataEOF())
 		{
 			if ($this->wait_comment !== false)
-				throw new ToxgException('Unterminated comment started on line ' . $this->wait_comment . '.', $this->file, $this->line);
+				throw new ToxgExceptionFile($this->file, $this->line, 'syntax_comment_unterminated', $this->wait_comment);
 			return false;
 		}
 
+		// We may have a stream, an array of already-parsed tokens, or a string.
 		if (is_resource($this->data))
 			return $this->readStreamToken();
+		elseif (is_array($this->data))
+			return $this->readArrayToken();
 		else
 			return $this->readStringToken();
 	}
 
 	public function isDataEOF()
 	{
+		// For arrays, we use data_pos as an index.  Check only it.
+		if (is_array($this->data))
+			return $this->data_pos >= count($this->data);
+
+		// For streams and strings, we have a buffer.  If it's not used up yet, we're not at the end.
 		if ($this->data_pos < strlen($this->data_buffer))
 			return false;
 
@@ -129,6 +163,14 @@ class ToxgSource
 			return false;
 
 		return $this->readStringToken();
+	}
+
+	protected function readArrayToken()
+	{
+		if ($this->data_pos >= count($this->data))
+			return false;
+
+		return $this->data[$this->data_pos++];
 	}
 
 	protected function readStringToken()
@@ -217,7 +259,7 @@ class ToxgSource
 		if ($ns === false)
 			return $this->readContent(1);
 
-		return $this->readGenericTag('tag', '>', 1 + strlen($ns) + 1);
+		return $this->readGenericTag('tag', '<', '>', 1 + strlen($ns) + 1);
 	}
 
 	protected function readCurlyToken()
@@ -265,42 +307,62 @@ class ToxgSource
 					$type = 'output-ref';
 			}
 
+			// Otherwise this may be CSS/JS/something we don't want to munge.
 			if ($ns === false && $type === 'tag')
 				return $this->readContent(1);
 		}
 
 		// Now it's time to parse a tag, lang, or var.
-		return $this->readGenericTag($type, '}', 1);
+		return $this->readGenericTag($type, '{', '}', 1);
 	}
 
-	protected function readGenericTag($type, $end_c, $offset)
+	protected function readGenericTag($type, $nest_c, $end_c, $offset)
 	{
 		// Now it's time to parse a tag.  Start after any namespace/</etc. we already found.
 		$end_pos = $this->data_pos + $offset;
 		$finality = strlen($this->data_buffer);
+		$nesting = 0;
+
 		while ($end_pos < $finality)
 		{
 			// The only way to end a tag is >/}, but we respect quotes too.
 			$end_bracket = strpos($this->data_buffer, $end_c, $end_pos);
+			$nest_bracket = strpos($this->data_buffer, $nest_c, $end_pos);
 			$quote = strpos($this->data_buffer, '"', $end_pos);
+
+			// Nesting looks like this: {#x:{#y:1}}
+			if ($nest_bracket !== false && $end_bracket !== false)
+			{
+				// The { has to be before the }, and no quotes in the way.
+				if ($nest_bracket < $end_bracket && ($quote === false || $nest_bracket < $quote))
+				{
+					$end_pos = $nest_bracket + 1;
+					$nesting++;
+				}
+			}
 
 			// If the > is before the ", we're done.
 			if ($end_bracket !== false && ($quote === false || $end_bracket < $quote))
 			{
 				$end_pos = $end_bracket + 1;
-				break;
+
+				// We were nested, so just dump out a level.
+				if ($nesting > 0)
+					$nesting--;
+				else
+					break;
 			}
 
 			if ($quote !== false)
 			{
 				$quote = strpos($this->data_buffer, '"', $quote + 1);
 				if ($quote === false)
-					throw new ToxgException('Unclosed quote or unexpectedly long tag.', $this->file, $this->line);
+					throw new ToxgExceptionFile($this->file, $this->line, 'syntax_tag_buffer_unmatched_quotes');
 
 				$end_pos = $quote + 1;
 			}
 			else
-				throw new ToxgException('Unclosed or unexpectedly long instruction, try breaking it up.', $this->file, $this->line);
+				throw new ToxgExceptionFile($this->file, $this->line, 'syntax_tag_buffer_overflow');
 		}
 
 		if ($type === 'tag')
@@ -323,13 +385,12 @@ class ToxgSource
 		$data = substr($this->data_buffer, $this->data_pos, $chars);
 		$this->data_pos += $chars;
 
-		$token = array(
+		$tok = $this->makeTokenObject(array(
 			'file' => $this->file,
 			'line' => $this->line,
 			'type' => $type,
 			'data' => $data,
-		);
-		$tok = new ToxgToken($token, $this);
+		));
 
 		// If it wasn't actually a valid tag, let's go back and eat less after all.
 		if ($tok->type != $type && $tok->type == 'content' && $chars > 1)
@@ -342,6 +403,11 @@ class ToxgSource
 		// This token was now, next token will move forward as much as this token did.
 		$this->line += substr_count($data, "\n");
 		return $tok;
+	}
+
+	protected function makeTokenObject($info)
+	{
+		return new ToxgToken($info, $this);
 	}
 
 	protected function firstPosOf($find, $offset = 0)
@@ -362,8 +428,8 @@ class ToxgSource
 
 	public static function validNCName($ns)
 	{
-		// See XML spec for the source of this list.
-		// !!! All Unicode allowed.  This is wrong, but manual UTF-8 makes it a pain.
+		// See XML spec for the source of this list - http://www.w3.org/TR/REC-xml/.
+		// !!! All non-Latin Unicode code points allowed.  This is wrong, but manual UTF-8 makes it a pain.
 		$first_char = "A..Z_a..z\x80..\xFF";
 		$rest_chars = $first_char . '-.0..9';
 

@@ -11,7 +11,7 @@ class ToxgStandardElements
 	public static function useIn($template)
 	{
 		// In case any state is needed.
-		$inst = new ToxgStandardElements();
+		$inst = new self();
 
 		$tags = array(
 			'output',
@@ -25,6 +25,7 @@ class ToxgStandardElements
 			'set',
 			'json',
 			'default',
+			'element',
 			'call',
 			'cycle',
 			'template-push',
@@ -98,9 +99,9 @@ class ToxgStandardElements
 	public function tpl_output(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
 	{
 		$this->requireEmpty($token);
-		$this->requireAttributes(array('value', 'as'), $token);
+		$this->requireAttributes(array('value', 'as'), $attributes, $token);
 
-		$expr = ToxgExpression::normal($attributes['value'], $token, true);
+		$expr = $builder->parseExpression('normal', $attributes['value'], $token, true);
 		$raw = is_array($expr) && $expr[1] === true;
 		if (is_array($expr))
 			$expr = $expr[0];
@@ -110,21 +111,21 @@ class ToxgStandardElements
 		elseif ($attributes['as'] === 'raw' || $raw)
 			$builder->emitOutputParam('(' . $expr . ')', $token);
 		else
-			$token->toss('Invalid value for as attribute: expecting html or raw.');
+			$token->toss('tpl_output_invalid_as');
 	}
 
 	public function tpl_raw(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
 	{
 		$this->requireEmpty($token);
-		$this->requireAttributes(array('value'), $token);
+		$this->requireAttributes(array('value'), $attributes, $token);
 
-		$expr = ToxgExpression::normal($attributes['value'], $token);
+		$expr = $builder->parseExpression('normal', $attributes['value'], $token);
 		$builder->emitOutputParam('(' . $expr . ')', $token);
 	}
 
 	public function tpl_for(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
 	{
-		$this->requireAttributes(array('init', 'while', 'modify'), $token);
+		$this->requireAttributes(array('init', 'while', 'modify'), $attributes, $token);
 
 		$init = '';
 		$while = '';
@@ -141,7 +142,7 @@ class ToxgStandardElements
 
 		// If there's no parens or $'s in it, it can't be for-able.
 		if (empty($init) && empty($while) && empty($modify))
-			$token->toss('At least one parameter must be used in a for loop.');
+			$token->toss('untranslated', 'At least one parameter must be used in a for loop.');
 
 		if ($type === 'tag-empty')
 			$builder->emitCode('for (' . $init . '; ' . $while . '; ' . $modify . ') {}', $token);
@@ -154,31 +155,27 @@ class ToxgStandardElements
 	public function tpl_foreach(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
 	{
 		$this->requireNotEmpty($token);
-		$this->requireAttributes(array('from', 'as'), $token);
+		$this->requireAttributes(array('from', 'as'), $attributes, $token);
 
 		if ($type === 'tag-start')
 		{
-			$from = ToxgExpression::normal($attributes['from'], $token);
+			$from = $builder->parseExpression('normal', $attributes['from'], $token);
 
+			// Are they trying to use a key?
 			if (strpos($attributes['as'], '=>') !== false)
 			{
-				list ($key, $as) = explode('=>', $attributes['as']);
-				$key = ToxgExpression::variableNotLang(trim($key), $token);
-				$as = ToxgExpression::variableNotLang(trim($as), $token);
+				list ($as_k, $as_v) = explode('=>', $attributes['as'], 2);
+				$as = $builder->parseExpression('variableNotLang', $as_k, $token);
+				$as .= ' => ' . $builder->parseExpression('variableNotLang', $as_v, $token);
 			}
 			else
-				$as = ToxgExpression::variableNotLang($attributes['as'], $token);
+				$as = $builder->parseExpression('variableNotLang', $attributes['as'], $token);
 
 			// If there's no parens or $'s in it, it can't be foreachable.
 			if (strpos($from, '$') === false && strpos($from, '(') === false)
-				$token->toss('Cannot foreach over a string, you probably want a variable.');
+				$token->toss('tpl_foreach_invalid_from');
 
-			// !!! Do we want a way to have a key?  I think so.
-			if (isset($key))
-				$builder->emitCode('foreach (' . $from . ' as ' . $key . ' => ' . $as . ') {', $token);
-			else
-				$builder->emitCode('foreach (' . $from . ' as ' . $as . ') {', $token);
-
+			$builder->emitCode('foreach (' . $from . ' as ' . $as . ') {', $token);
 		}
 		else
 		{
@@ -194,11 +191,11 @@ class ToxgStandardElements
 			$attributes['test'] = $token->attributes['default'];
 			$token->attributes['test'] = $token->attributes['default'];
 		}
-		$this->requireAttributes(array('test'), $token);
+		$this->requireAttributes(array('test'), $attributes, $token);
 
 		if ($type === 'tag-start')
 		{
-			$expr = ToxgExpression::boolean($attributes['test'], $token);
+			$expr = $builder->parseExpression('boolean', $attributes['test'], $token);
 			$builder->emitCode('if (' . $expr . ') {', $token);
 		}
 		else
@@ -216,7 +213,7 @@ class ToxgStandardElements
 
 		if (isset($attributes['test']))
 		{
-			$expr = ToxgExpression::boolean($attributes['test'], $token);
+			$expr = $builder->parseExpression('boolean', $attributes['test'], $token);
 			$builder->emitCode('} elseif (' . $expr . ') {', $token);
 		}
 		else
@@ -233,10 +230,10 @@ class ToxgStandardElements
 	public function tpl_set(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
 	{
 		$this->requireEmpty($token);
-		$this->requireAttributes(array('var', 'value'), $token);
+		$this->requireAttributes(array('var', 'value'), $attributes, $token);
 
-		$var = ToxgExpression::variableNotLang($attributes['var'], $token);
-		$value = ToxgExpression::normal($attributes['value'], $token);
+		$var = $builder->parseExpression('variableNotLang', $attributes['var'], $token);
+		$value = $builder->parseExpression('normal', $attributes['value'], $token);
 
 		$builder->emitCode($var . ' = ' . $value . ';', $token);
 	}
@@ -244,26 +241,26 @@ class ToxgStandardElements
 	public function tpl_json(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
 	{
 		$this->requireEmpty($token);
-		$this->requireAttributes(array('value', 'as'), $token);
+		$this->requireAttributes(array('value', 'as'), $attributes, $token);
 
-		$expr = ToxgExpression::normal($attributes['value'], $token);
+		$expr = $builder->parseExpression('normal', $attributes['value'], $token);
 
 		if ($attributes['as'] === 'html')
 			$builder->emitOutputParam('htmlspecialchars(json_encode(' . $expr . '))', $token);
 		elseif ($attributes['as'] === 'raw')
 			$builder->emitOutputParam('json_encode(' . $expr . ')', $token);
 		else
-			$token->toss('Invalid value for as attribute: expecting html or raw.');
+			$token->toss('tpl_output_invalid_as');
 	}
 
 	public function tpl_default(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
 	{
 		$this->requireEmpty($token);
-		$this->requireAttributes(array('var'), $token);
+		$this->requireAttributes(array('var'), $attributes, $token);
 
-		$value = ToxgExpression::variable($attributes['var'], $token);
+		$value = $builder->parseExpression('variable', $attributes['var'], $token);
 		if (isset($attributes['default']))
-			$default = ToxgExpression::stringWithVars($attributes['default'], $token);
+			$default = $builder->parseExpression('stringWithVars', $attributes['default'], $token);
 		else
 			$default = '\'\'';
 
@@ -278,6 +275,54 @@ class ToxgStandardElements
 			$builder->emitCode('else echo htmlspecialchars(' . $default . ');', $token);
 	}
 
+	public function tpl_element(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
+	{
+		// We don't use requireAttributes() because we are using the ns.
+		if (empty($attributes[ToxgTemplate::TPL_NAMESPACE . ':name']))
+			$token->toss('generic_tpl_empty_attr', 'tpl:name', $token->prettyName());
+		$name = $builder->parseExpression('stringWithVars', $attributes[ToxgTemplate::TPL_NAMESPACE . ':name'], $token);
+
+		if (isset($attributes[ToxgTemplate::TPL_NAMESPACE . ':inherit']))
+			$inherit = preg_split('~[ \t\r\n]+~', $attributes[ToxgTemplate::TPL_NAMESPACE . ':inherit']);
+		else
+			$inherit = array();
+
+		if ($token->type === 'tag-empty' || $token->type === 'tag-start')
+		{
+			$args_escaped = array();
+			foreach ($attributes as $k => $v)
+			{
+				if ($k === ToxgTemplate::TPL_NAMESPACE . ':inherit' || $k === ToxgTemplate::TPL_NAMESPACE . ':name')
+					continue;
+
+				$k = '\'' . addcslashes(ToxgExpression::makeVarName($k), '\\\'') . '\'';
+				$args_escaped[] = $k . ' => ' . $builder->parseExpression('stringWithVars', $v, $token);
+			}
+
+			if (in_array('*', $inherit))
+				$builder->emitCode('$__toxg_args = array(' . implode(', ', $args_escaped) . ') + $__toxg_params;', $token);
+			elseif (!empty($inherit))
+				$builder->emitCode('$__toxg_args = array(' . implode(', ', $args_escaped) . ') + array_intersect_key($__toxg_params, array_flip(' . var_export($inherit, true) . '));', $token);
+			else
+				$builder->emitCode('$__toxg_args = array(' . implode(', ', $args_escaped) . ');', $token);
+
+			$builder->emitOutputString('<', $token);
+			$builder->emitOutputParam($name, $token);
+			$builder->emitCode('foreach ($__toxg_args as $__toxg_k => $__toxg_v) echo \' \', htmlspecialchars($__toxg_k), \'="\', htmlspecialchars($__toxg_v), \'"\';', $token);
+
+			if ($token->type === 'tag-empty')
+				$builder->emitOutputString(' />', $token);
+			else
+				$builder->emitOutputString('>', $token);
+		}
+		elseif ($token->type === 'tag-end')
+		{
+			$builder->emitOutputString('</', $token);
+			$builder->emitOutputParam($name, $token);
+			$builder->emitOutputString('>', $token);
+		}
+	}
+
 	public function tpl_template_push(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
 	{
 		$this->requireEmpty($token);
@@ -288,7 +333,7 @@ class ToxgStandardElements
 		{
 			$k = '\'' . addcslashes(ToxgExpression::makeVarName($k), '\\\'') . '\'';
 			$save[] = $k;
-			$args[] = $k . ' => ' . ToxgExpression::stringWithVars($v, $token);
+			$args[] = $k . ' => ' . $builder->parseExpression('stringWithVars', $v, $token);
 		}
 
 		// First, save the existing variables (if any.)
@@ -306,7 +351,7 @@ class ToxgStandardElements
 	{
 		$this->requireEmpty($token);
 		if ($this->template_push_level <= 0)
-			$token->toss('Please always use a template-push before a template-pop.');
+			$token->toss('tpl_template_pop_without_push');
 
 		// Just restore the previously saved variables, actually.
 		$builder->emitCode('global $__toxg_stack; extract(array_pop($__toxg_stack), EXTR_OVERWRITE);', $token);
@@ -318,24 +363,24 @@ class ToxgStandardElements
 	protected function requireEmpty(ToxgToken $token)
 	{
 		if ($token->type !== 'tag-empty')
-			$token->toss('All ' . $token->prettyName() . ' must be empty.)');
+			$token->toss('generic_tpl_must_be_empty', $token->prettyName());
 	}
 
 	protected function requireNotEmpty(ToxgToken $token)
 	{
 		if ($token->type === 'tag-empty')
-			$token->toss('All ' . $token->prettyName() . ' cannot be empty.)');
+			$token->toss('generic_tpl_must_be_not_empty', $token->prettyName());
 	}
 
-	protected function requireAttributes(array $reqs, ToxgToken $token)
+	protected function requireAttributes(array $reqs, array $attributes, ToxgToken $token)
 	{
 		if ($token->type === 'tag-end')
 			return;
 
 		foreach ($reqs as $req)
 		{
-			if (!isset($token->attributes[$req]))
-				$token->toss('Missing attribute ' . $req . ' for ' . $token->prettyName() . ' (required: ' . implode(', ', $reqs) . '.)');
+			if (!isset($attributes[$req]))
+				$token->toss('generic_tpl_missing_required', $req, $token->prettyName(), implode(', ', $reqs));
 		}
 	}
 }

@@ -176,6 +176,13 @@ function test_invalid_source_029($harness)
 	$harness->addWrappedData('var x = {tpl: xyz};');
 }
 
+
+function test_invalid_source_030($harness)
+{
+	$harness->expectFailure(1);
+	$harness->addData('<![CDATA[test]]>');
+}
+
 function test_invalid_overlay_001($harness)
 {
 	$harness->expectFailure(1);

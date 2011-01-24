@@ -32,23 +32,6 @@ Drawbacks:
 	1. Might be more work to write tests.
 
 
-Carefully test versions of PHP/etc.
---------------------------------------------------------------------------------
-Right now, this has only seen proper testing in PHP 5.2.6 and 5.3.2.  It needs
-to be given more thorough testing across PHP versions, running the full test
-suite for all of those meant to be supported.
-
-For one, json_encode()/json_decode() compat code will need to be used.
-
-Status: not confirmed
-
-Benefits:
-	1. Obvious, will support versions of PHP we intend.
-
-Drawbacks:
-	1. May have significant problems in some version, unlikely.
-
-
 Measure performance in tests
 --------------------------------------------------------------------------------
 Even if this is a simple "shouldn't take longer than 100ms" or something, there
@@ -104,23 +87,6 @@ Drawbacks:
 	1. Can be a lot of work, especially the more major portions.
 	2. Performance benefit/difference may be extremely small.
 	3. Need to do some profiling/benchmarking to know what to worry about.
-
-
-Better i18n support
---------------------------------------------------------------------------------
-The current version throws English exceptions only, and builds a few of them as
-strings.  This isn't great for internationalization, since the error messages
-should ideally be in multiple languages.
-
-The correct plan of attack for i18n messages should be made and implemented.
-
-Status: not confirmed
-
-Benefits:
-	1. People who speak other languages can write templates more easily.
-
-Drawbacks:
-	1. None really.
 
 
 The tpl:format element, language strings

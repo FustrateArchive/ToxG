@@ -5,7 +5,6 @@ class ToxgOverlay
 	const RECURSION_LIMIT = 10;
 
 	protected $source = null;
-	protected $source_fp = null;
 	protected $alters = array();
 	protected $parse_state = 'outside';
 	protected $parse_alter = null;
@@ -15,15 +14,12 @@ class ToxgOverlay
 	public function __construct($file, array $called_overlays = array())
 	{
 		if ($file instanceof ToxgSource)
-			$this->source = $file;
-		else
 		{
-			$this->source_fp = @fopen($file, 'rt');
-			if (!$this->source_fp)
-				throw new ToxgException('Unable to open overlay file: ' . $file, '', 0);
-
-			$this->source = new ToxgSource($this->source_fp, $file);
+			$this->source = $file;
+			$this->source->initialize();
 		}
+		elseif ($file !== null)
+			$this->source = new ToxgSourceFile($file);
 
 		// This array is indexed by position.
 		$this->alters = array(
@@ -34,13 +30,6 @@ class ToxgOverlay
 		);
 
 		$this->called_overlays = $called_overlays;
-	}
-
-	public function __destruct()
-	{
-		if ($this->source_fp !== null)
-			fclose($this->source_fp);
-		$this->source_fp = null;
 	}
 
 	public function setNamespaces(array $uris)
@@ -55,25 +44,34 @@ class ToxgOverlay
 
 	public function parse()
 	{
+		if ($this->source === null)
+			throw new ToxgException('overlay_no_source');
+
 		while ($token = $this->source->readToken())
-		{
-			switch ($this->parse_state)
-			{
-			case 'outside':
-				$this->parseOutside($token);
-				break;
-
-			case 'alter':
-				$this->parseInAlter($token);
-				break;
-
-			default:
-				$token->toss('Internal parsing error.');
-			}
-		}
+			$this->parseToken($token);
 
 		if ($this->parse_state !== 'outside')
-			throw new ToxgException('Unexpected end of file before a tpl:alter was finished.', '', 0);
+			throw new ToxgException('overlay_incomplete');
+	}
+
+	public function parseToken(ToxgToken $token)
+	{
+		switch ($this->parse_state)
+		{
+		case 'outside':
+			$this->parseOutside($token);
+			break;
+
+		case 'alter':
+			$this->parseInAlter($token);
+			break;
+
+		default:
+			$token->toss('parsing_internal_error');
+		}
+
+		// We return telling the caller whether we need more tokens.
+		return $this->parse_state !== 'outside';
 	}
 
 	protected function parseOutside(ToxgToken $token)
@@ -84,12 +82,12 @@ class ToxgOverlay
 		case 'tag-end':
 			// We're only interested in tpl:alter or a tpl:container.
 			if ($token->nsuri != ToxgTemplate::TPL_NAMESPACE)
-				$token->toss('Unexpected namespace in ' . $token->prettyName() . ' while looking for <tpl:container>s and <tpl:alter>s.');
+				$token->toss('overlay_element_outside_alter', $token->prettyName());
 
 			if ($token->name === 'alter')
 				$this->setupAlter($token);
 			elseif ($token->name !== 'container')
-				$token->toss('Unexpected element: ' . $token->prettyName());
+				$token->toss('overlay_element_outside_alter', $token->prettyName());
 
 			break;
 
@@ -101,13 +99,13 @@ class ToxgOverlay
 
 		case 'content':
 			if (trim($token->data) !== '')
-				$token->toss('Unexpected content when looking for <tpl:container>s and <tpl:alter>s.  Put it in a comment, perhaps?');
+				$token->toss('overlay_content_outside_alter');
 
 			// Otherwise, just whitespace, ignore it.
 			break;
 
 		default:
-			$token->toss('Unexpected ' . $token->type . ' when looking for <tpl:container>s and <tpl:alter>s.');
+			$token->toss('overlay_other_outside_alter', $token->type);
 		}
 	}
 
@@ -127,17 +125,16 @@ class ToxgOverlay
 
 		default:
 			// We copy everything else.
-			// !!! Maybe there's a more efficient way, like storing the tokens?
-			$this->parse_alter['data'] .= $token->data;
+			$this->parse_alter['data'][] = $token;
 		}
 	}
 
 	protected function setupAlter(ToxgToken $token)
 	{
 		if (!isset($token->attributes['match'], $token->attributes['position']))
-			$token->toss('Element tpl:alter must have match="ns:template" and position="before" or similar.');
+			$token->toss('tpl_alter_missing_match_position');
 		if (!isset($this->alters[$token->attributes['position']]))
-			$token->toss('Unsupported position for tpl:alter.');
+			$token->toss('tpl_alter_invalid_position');
 
 		$this->parse_state = 'alter';
 		$this->parse_alter = &$this->alters[$token->attributes['position']][];
@@ -145,7 +142,7 @@ class ToxgOverlay
 		$this->parse_alter['token'] = $token;
 		$this->parse_alter['file'] = $token->file;
 		$this->parse_alter['line'] = $token->line;
-		$this->parse_alter['data'] = '';
+		$this->parse_alter['data'] = array();
 		$this->parse_alter['match'] = $token->attributes['match'];
 		$this->parse_alter['name'] = isset($token->attributes['name']) ? $token->attributes['name'] : false;
 		if ($this->parse_alter['name'] !== false)
@@ -173,20 +170,21 @@ class ToxgOverlay
 		foreach ($matches as $match)
 		{
 			if (strpos($match, ':') === false)
-				$this->parse_alter['token']->toss('Every matched element should have a namespace, ' . $match . ' didn\'t have one.');
+				$this->parse_alter['token']->toss('tpl_alter_match_without_ns', $match);
 
 			list ($ns, $name) = explode(':', $match, 2);
 
 			$nsuri = $this->parse_alter['token']->getNamespace($ns);
 			if ($nsuri === false)
-				$this->parse_alter['token']->toss('You need to declare namespaces even for matched elements (' . $ns . ' was undeclared.)');
+				$this->toss('tpl_alter_match_unknown_ns', $ns);
 
 			// Just store it "fully qualified"...
 			$this->parse_alter['match'][] = $nsuri . ':' . $name;
 		}
 
 		$this->parse_alter['source'] = new ToxgSource($this->parse_alter['data'], $this->parse_alter['file'], $this->parse_alter['line']);
-		$this->parse_alter['source']->copyNamespaces($this->source);
+		if ($this->source !== null)
+			$this->parse_alter['source']->copyNamespaces($this->source);
 	}
 
 	public function parsedElement(ToxgToken $token, ToxgParser $parser)
@@ -213,18 +211,21 @@ class ToxgOverlay
 
 			// Maybe this is dumb, I can't really think of when recursing once will even be okay?
 			if ($this->match_recursion[$fqname] > self::RECURSION_LIMIT)
-				$token->toss('Potential alter recursion detected on ' . $token->prettyName() . '.');
+				$token->toss('tpl_alter_recurison', $token->prettyName());
 
 			$this->insertMatchedAlters('before', 'normal', $token, $parser);
 			$this->insertMatchedAlters('beforecontent', 'defer', $token, $parser);
 		}
 		elseif ($token->type === 'tag-end')
 		{
+			if (empty($this->match_tree))
+				$token->toss('parsing_tag_already_closed', $token->prettyName());
+
 			$this->match_recursion[$fqname]--;
 			$close_token = array_pop($this->match_tree);
 
 			if ($close_token->nsuri != $token->nsuri || $close_token->name != $token->name)
-				$token->toss('Expecting the close tag from ' . $close_token->prettyName() . ' in ' . $close_token->file . ', line ' . $close_token->line . '.');
+				$token->toss('parsing_tag_end_unmatched', $token->prettyName(), $close_token->prettyName(), $close_token->file, $close_token->line);
 
 			$this->insertMatchedAlters('aftercontent', 'normal', $close_token, $parser);
 			$this->insertMatchedAlters('after', 'defer', $close_token, $parser);

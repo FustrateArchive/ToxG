@@ -21,6 +21,10 @@ To use curly braces as normal, just put any whitespace after the brace:
 
 	var object = { tpl:content };
 
+Or put a space after the :, which is more readable anyway:
+
+	var object = {tpl: content};
+
 The curly brace syntax is prefered within an existing HTML element, e.g.:
 
 	<option{if test="$selected"} selected="selected"{/if}>
@@ -29,12 +33,15 @@ The curly brace syntax is prefered within an existing HTML element, e.g.:
 How namespaces are recognized
 --------------------------------------------------------------------------------
 TOX-G ignores xmlns declarations on any node that doesn't have a colon in
-its name.
+its name.  It also doesn't use a "default" namespace (xmlns=.)
 
-In other words, TOX-G would think this is a template (and remove it):
+In other words, TOX-G would think this is a template (and remove it unless a
+template was defined for it):
+
 	<mml:math xmlns:mml="http://www.w3.org/1998/Math/MathML" />
 
 However, the following elements it would leave alone:
+
 	<math xmlns="http://www.w3.org/1998/Math/MathML" />
 	<div xmlns:mml="http://www.w3.org/1998/Math/MathML"><mml:math /></div>
 
@@ -56,21 +63,35 @@ separate "expressions" documentation.
 
 Comments
 --------------------------------------------------------------------------------
-To comment out code, use a standard HTML/XML comment, with three dashes, as:
+To comment out code, use a standard HTML/XML comment, except with three dashes,
+like the following:
 
-<!--- <tpl:this-is-not-parsed /> --->
+	<!--- <tpl:this-is-not-parsed /> --->
 
 
 CDATA
 --------------------------------------------------------------------------------
-Within your source code, you can use CDATA sections to affect escaping.  Even
-so, CDATA affects only output and does not prevent tag parsing.
+Within your source code, you can use CDATA sections to affect escaping.  Unlike
+in XML, CDATA affects only output and does not prevent tag parsing.
 
-<![CDATA[ {$not_escaped} ]]>
+	<![CDATA[ {$not_escaped} ]]>
 
 Keep in mind, the CDATA will also be output in the HTML (which indicates to
-take the text as is, which is why it need not be escaped.  This is mainly used
-in <script> elements.
+take the text as is, which is why it need not be escaped.)  This is mainly
+used in <script> elements.
+
+
+Template calls
+--------------------------------------------------------------------------------
+When "calling" (using) a template, there's a special attribute that can be used
+named tpl:inherit.  This is also available for the tpl:element element.
+
+It contains a space separated list of attribute names, or an asterisk.
+
+The asterisk means to pass along any and all attributes passed into the
+template.  Otherwise, the list gives the names of attributes to pass along.
+
+This is beneficial when writing convenience templates.
 
 
 Supported elements
@@ -318,6 +339,24 @@ tpl:default
 	string to use alternatively.  If not specified, a blank string is used.
 
 	<tpl:default var="{$page_name}" default="{#page_name_home}" />
+
+tpl:element
+................................................................................
+	Used to dynamically output an element into the HTML.  This can make it
+	really easy to create convenience templates.
+
+	Can be used inside templates and alterations (anywhere content can be.)
+
+	Requires a "tpl:name" attribute.  Note that this attribute is in the tpl
+	namespace.  If you use "name", it will be added to the outputted element.
+
+	Optionally uses a "tpl:inherit" attribute which means "inherit attributes
+	this template was used with."  If you use "*" or "class", and your template
+	was called with a class attribute, that attribute will be added.
+
+	Any other attributes are passed along, unless you override them.
+
+	<tpl:element tpl:name="input" type="text" class="text" tpl:inherit="*" />
 
 template-push
 ................................................................................

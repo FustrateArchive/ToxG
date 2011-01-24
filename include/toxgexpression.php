@@ -9,6 +9,13 @@ class ToxgExpression
 	protected $built = array();
 	protected $is_raw = false;
 
+	protected static $lang_function = 'lang';
+
+	public static function setLangFunction($func)
+	{
+		self::$lang_function = $func;
+	}
+
 	public function __construct($data, ToxgToken $token)
 	{
 		$this->data = $data;
@@ -46,13 +53,13 @@ class ToxgExpression
 		$this->eatWhite();
 
 		if ($this->data_len === 0 || $this->data[$this->data_pos] !== '{')
-			$this->toss('expected variable reference.');
+			$this->toss('expression_expected_var');
 
 		$this->readReference($allow_lang);
 
 		$this->eatWhite();
 		if ($this->data_pos < $this->data_len)
-			$this->toss('expecting only a variable reference.');
+			$this->toss('expression_expected_var_only');
 
 		return $this->getCode();
 	}
@@ -61,7 +68,7 @@ class ToxgExpression
 	{
 		// An empty string, let's short-circuit this common case.
 		if ($this->data_len === 0)
-			$this->toss('expected expression, found empty.');
+			$this->toss('expression_empty');
 
 		while ($this->data_pos < $this->data_len)
 		{
@@ -89,17 +96,18 @@ class ToxgExpression
 		{
 			// We'll get a "[] can't be used for reading" fatal error.
 			if (substr($part, -2) === '[]' || substr($part, -3) === '[ ]')
-				$this->toss('unable to parse properly.');
+				$this->toss('expression_unknown_error');
 		}
 
 		$expr = implode('', $this->built);
 
+		// !!! Well, create_function() leaks memory.  Maybe we can avoid this...
 		$saved = error_reporting(E_ERROR | E_CORE_ERROR | E_COMPILE_ERROR);
 		$attempt = create_function('', 'return (' . $expr . ');');
 		error_reporting($saved);
 
 		if ($attempt === false)
-			$this->toss('unable to parse properly.');
+			$this->toss('expression_unknown_error');
 
 		return $expr;
 	}
@@ -110,9 +118,9 @@ class ToxgExpression
 		if ($pos === false)
 			$pos = $this->data_len;
 
-		// Should never happen?
+		// Should never happen, unless we were called wrong.
 		if ($pos === $this->data_pos)
-			$this->toss('unexpected characters.');
+			$this->toss('expression_unknown_error');
 
 		$this->readString($pos);
 	}
@@ -124,7 +132,7 @@ class ToxgExpression
 
 		$pos = $this->firstPosOf('}');
 		if ($pos === false)
-			$this->toss('unmatched braces.');
+			$this->toss('expression_braces_unmatched');
 
 		switch ($this->data[$this->data_pos])
 		{
@@ -152,9 +160,9 @@ class ToxgExpression
 			// Intentional fall-through on false.
 
 			if ($allow_lang)
-				$this->toss('expecting reference like {$name} or {#name}.');
+				$this->toss('expression_expected_ref');
 			else
-				$this->toss('expecting variable like {$name} inside braces.');
+				$this->toss('expression_expected_ref_nolang');
 		}
 
 		// Skip over the }.
@@ -174,6 +182,7 @@ class ToxgExpression
 		// When we hit a [, the next item has a [ before it.
 		// When we hit a ], there is no item, but just a ].
 
+		$brackets = 0;
 		while ($this->data_pos < $end)
 		{
 			$next = $this->firstPosOf(array('[', '.', ']', '->'), 1);
@@ -186,7 +195,11 @@ class ToxgExpression
 			switch ($c)
 			{
 			case '$':
-				$this->built[] = '$' . self::makeVarName($this->eatUntil($next));
+				$name = $this->eatUntil($next);
+				if ($name === '')
+					$this->toss('expression_var_name_empty');
+
+				$this->built[] = '$' . self::makeVarName($name);
 				break;
 
 			case '.':
@@ -200,10 +213,14 @@ class ToxgExpression
 				$this->eatWhite();
 				$this->readVarPart($next, false);
 				$this->eatWhite();
+
+				$brackets++;
 				break;
 
 			case ']':
 				$this->built[] = ']';
+
+				$brackets--;
 				break;
 
 			// When we hit a ->, first we output a -... then, next round...
@@ -223,6 +240,9 @@ class ToxgExpression
 				$this->built[] = $this->eatUntil($next);
 			}
 		}
+
+		if ($brackets > 0)
+			$this->toss('expression_brackets_unmatched');
 	}
 
 	protected function readVarPart($end, $require = false)
@@ -236,6 +256,11 @@ class ToxgExpression
 		case '#':
 			$this->readLangRef($end);
 			break;
+ 
+		case '{':
+			// No need for end, since the curlies are expected to be matched.
+			$this->readReference();
+			break;
 
 		// Is it "raw"? If so, we remove htmlspecialchars
 		case 'r':
@@ -244,7 +269,7 @@ class ToxgExpression
 
 		default:
 			if ($require && $this->data_pos == $end)
-				$this->toss('incomplete expression.');
+				$this->toss('expression_incomplete');
 			$this->readString($end);
 		}
 	}
@@ -272,14 +297,14 @@ class ToxgExpression
 
 	protected function readLangRef($end)
 	{
-		$this->built[] = 'lang(';
+		$this->built[] = self::$lang_function . '(';
 
 		if ($this->data_pos >= $end - 1)
-			$this->toss('empty language reference.');
+			$this->toss('expression_lang_name_empty');
 
 		while ($this->data_pos < $end)
 		{
-			$next = $this->firstPosOf(array(':'), 1);
+			$next = $this->firstPosOf(':', 1);
 			if ($next === false || $next > $end)
 				$next = $end;
 
@@ -304,16 +329,16 @@ class ToxgExpression
 		if ($pos === false)
 			$pos = $this->data_len;
 
-		// Should never happen?
+		// Should never happen, unless we were called wrong?
 		if ($pos === $this->data_pos)
-			$this->toss('unexpected characters.');
+			$this->toss('expression_unknown_error');
 
 		$this->built[] = $this->eatUntil($pos);
 	}
 
 	protected function toss($error)
 	{
-		$this->token->toss('Invalid expression ' . $this->data . ', ' . $error);
+		$this->token->toss('expression_invalid_meta', $this->data, $error);
 	}
 
 	protected function eatWhite()
@@ -356,19 +381,19 @@ class ToxgExpression
 
 	public static function variable($string, ToxgToken $token)
 	{
-		$expr = new ToxgExpression($string, $token);
+		$expr = new self($string, $token);
 		return $expr->parseVariable();
 	}
 
 	public static function variableNotLang($string, ToxgToken $token)
 	{
-		$expr = new ToxgExpression($string, $token);
+		$expr = new self($string, $token);
 		return $expr->parseVariable(false);
 	}
 
 	public static function stringWithVars($string, ToxgToken $token)
 	{
-		$expr = new ToxgExpression($string, $token);
+		$expr = new self($string, $token);
 		return $expr->parseInterpolated();
 	}
 
@@ -379,7 +404,7 @@ class ToxgExpression
 
 	public static function boolean($string, ToxgToken $token, $accept_raw = false)
 	{
-		$expr = new ToxgExpression($string, $token);
+		$expr = new self($string, $token);
 		return $expr->parseNormal($accept_raw);
 	}
 

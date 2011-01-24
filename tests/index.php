@@ -35,6 +35,11 @@ function call_test_funcs(ToxgTestList $list)
 	}
 
 	echo number_format($pass + $fail), ' tests run, ', number_format($fail), ' failed.', "\n";
+
+	if ($fail == 0)
+		exit(0);
+	else
+		exit(1);
 }
 
 ?>

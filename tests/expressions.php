@@ -186,4 +186,9 @@ function test_expression_023($harness)
 	$harness->addWrappedData('<tpl:set var="{$x}" value="{ToxgTestHarness} . ToxgTestHarness::TEST " />');
 }
 
+function test_expression_024($harness)
+{
+	$harness->addWrappedData('<tpl:output value="{#lang:{$lang2:1}}" />');
+}
+
 ?>

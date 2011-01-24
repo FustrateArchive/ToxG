@@ -3,13 +3,20 @@
 class ToxgPrebuilder
 {
 	protected $templates = array();
-	protected $inside_template = false;
+	protected $template_usage = array();
+	protected $parse_state = 'outside';
+	protected $primary_overlay = null;
+
+	public function __construct()
+	{
+		$this->primary_overlay = new ToxgOverlay(null);
+	}
 
 	public function getTemplateForBuild($token)
 	{
 		$name = self::makeTemplateName($token, 'name-attr');
 		if (!isset($this->templates[$name]))
-			$token->toss('New template found by builder, not found by prebuilder.');
+			$token->toss('builder_unexpected_template');
 		$template = $this->templates[$name];
 
 		if ($template['file'] == $token->file && $template['line'] == $token->line)
@@ -41,31 +48,63 @@ class ToxgPrebuilder
 		return $template;
 	}
 
+	public function getTemplateUsage()
+	{
+		return $this->template_usage;
+	}
+
 	public function setupParser(ToxgParser $parser)
 	{
 		$parser->listen('parsedContent', array($this, 'parsedContent'));
 		$parser->listen('parsedElement', array($this, 'parsedElement'));
 	}
 
+	public function setupOverlayParser(ToxgParser $parser)
+	{
+		$this->primary_overlay->setupParser($parser);
+	}
+
 	public function parsedContent(ToxgToken $token, ToxgParser $parser)
 	{
-		$this->requireTemplate($token);
+		if ($this->parse_state === 'alter')
+			$this->handleAlterToken($token);
+		else
+			$this->requireTemplate($token);
 	}
 
 	public function parsedElement(ToxgToken $token, ToxgParser $parser)
 	{
-		if ($token->nsuri === ToxgTemplate::TPL_NAMESPACE)
+		if ($this->parse_state === 'alter')
+		{
+			$this->handleAlterToken($token);
+			$this->trackUsage($token);
+		}
+		elseif ($token->nsuri === ToxgTemplate::TPL_NAMESPACE)
 		{
 			if ($token->name === 'template')
 				$this->handleTagTemplate($token);
+			elseif ($token->name === 'alter')
+				$this->handleTagAlter($token);
 
-			// !!! For some reason template-push needs a better error message?
-			$okay_outside_template = array('container', 'template');
+			$okay_outside_template = array('container', 'template', 'alter');
 			if (!in_array($token->name, $okay_outside_template))
 				$this->requireTemplate($token);
+
+			$this->trackUsage($token);
 		}
 		else
+		{
 			$this->requireTemplate($token);
+			$this->trackUsage($token);
+		}
+	}
+
+	protected function trackUsage(ToxgToken $token)
+	{
+		// We won't count auto-tokens because they're for direct calls.
+		// !!! Better way?
+		if ($token->data !== '{tpl:auto-token /}')
+			$this->template_usage[$token->nsuri][$token->name] = true;
 	}
 
 	protected function handleTagTemplate(ToxgToken $token)
@@ -73,8 +112,10 @@ class ToxgPrebuilder
 		// We only care about start tags.
 		if ($token->type === 'tag-start')
 		{
-			if ($this->inside_template)
-				$token->toss('Templates cannot contain other templates.  Forgot a close tpl:template?');
+			if ($this->parse_state === 'template')
+				$token->toss('tpl_template_inside_template');
+			elseif ($this->parse_state !== 'outside')
+				$token->toss('tpl_template_inside_alter');
 
 			$name = self::makeTemplateName($token, 'name-attr');
 
@@ -99,22 +140,45 @@ class ToxgPrebuilder
 				}
 			}
 
-			$this->inside_template = true;
+			$this->parse_state = 'template';
 		}
 		elseif ($token->type === 'tag-end')
-			$this->inside_template = false;
+			$this->parse_state = 'outside';
+	}
+
+	protected function handleTagAlter(ToxgToken $token)
+	{
+		// Start tags are where the action happens.
+		if ($token->type === 'tag-start')
+		{
+			if ($this->parse_state !== 'outside')
+				$token->toss('tpl_alter_inside_template');
+
+			$this->parse_state = 'alter';
+
+			// We just pass it on.  The overlay will handle it.
+			$this->handleAlterToken($token);
+		}
+		elseif ($token->type === 'tag-end')
+			$this->parse_state = 'outside';
 	}
 
 	protected function requireTemplate(ToxgToken $token)
 	{
-		if (!$this->inside_template)
+		if ($this->parse_state !== 'template')
 		{
 			// Okay, make it pretty for the user.
 			if ($token->type === 'tag-start' || $token->type === 'tag-empty' || $token->type === 'tag-end')
-				throw new ToxgException('Element ' . $token->prettyName() . ' found outside template.', $token->file, $token->line);
+				$token->toss('builder_element_outside_template', $token->prettyName());
 			else
-				throw new ToxgException('Text or code found outside template.', $token->file, $token->line);
+				$token->toss('builder_stuff_outside_template');
 		}
+	}
+
+	protected function handleAlterToken(ToxgToken $token)
+	{
+		if (!$this->primary_overlay->parseToken($token))
+			$this->parse_state = 'outside';
 	}
 
 	public static function makeTemplateName($token, $type = 'token')

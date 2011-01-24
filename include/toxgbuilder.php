@@ -4,6 +4,7 @@ class ToxgBuilder
 {
 	protected $debugging = true;
 	protected $data = null;
+	protected $data_close = false;
 	protected $last_file = null;
 	protected $last_line = 1;
 	protected $prebuilder = null;
@@ -27,8 +28,7 @@ class ToxgBuilder
 
 	public function __destruct()
 	{
-		if ($this->data !== null)
-			@fclose($this->data);
+		$this->abort();
 	}
 
 	public function disableDebugging($disable)
@@ -49,10 +49,19 @@ class ToxgBuilder
 		{
 			$this->data = @fopen($cache_file, 'wt');
 			if (!$this->data)
-				throw new ToxgException('Unable to open output file: ' . $cache_file, '', 0);
+				throw new ToxgException('builder_cannot_open', $cache_file);
+
+			$this->data_close = true;
 		}
 
 		$this->emitCode('<?php ');
+	}
+
+	public function abort()
+	{
+		// Release the file so it isn't left open until the request end.
+		if ($this->data !== null && $this->data_close)
+			@fclose($this->data);
 	}
 
 	public function setPrebuilder($prebuilder)
@@ -83,10 +92,16 @@ class ToxgBuilder
 			return;
 
 		$listeners = $this->listeners[$nsuri][$name];
-		$args = array($this, $token->type, $token->attributes, $token);
 		foreach ($listeners as $callback)
 		{
-			$result = call_user_func_array($callback, $args);
+			// We don't use call_user_func because we want to allow by reference passing.
+			if (is_string($callback))
+				$result = $callback($this, $token->type, $token->attributes, $token);
+			elseif (is_string($callback[0]))
+				$result = $callback[0]::$callback[1]($this, $token->type, $token->attributes, $token);
+			else
+				$result = $callback[0]->$callback[1]($this, $token->type, $token->attributes, $token);
+
 			if ($result === false)
 				break;
 		}
@@ -94,6 +109,9 @@ class ToxgBuilder
 
 	public function setupParser(ToxgParser $parser)
 	{
+		if ($this->prebuilder !== null)
+			$this->prebuilder->setupOverlayParser($parser);
+
 		$parser->listen('parsedContent', array($this, 'parsedContent'));
 		$parser->listen('parsedElement', array($this, 'parsedElement'));
 	}
@@ -116,12 +134,14 @@ class ToxgBuilder
 				$this->handleTagTemplate($token);
 			elseif ($token->name === 'content')
 				$this->handleTagContent($token);
+			elseif ($token->name === 'alter')
+				$this->handleTagAlter($token);
 
 			$this->fireEmit($token);
 
 			// If there was no emitted code, it's probably an error.
 			if ($this->has_emitted === false && $this->debugging)
-				$token->toss('Unrecognized or misspelled element tpl:' . $token->name . ' (or it didn\'t generate code.)');
+				$token->toss('unknown_tpl_element', $token->name);
 		}
 		else
 		{
@@ -136,6 +156,19 @@ class ToxgBuilder
 		// A container is just a thing to set namespaces, it does nothing.
 		// However, we have to omit something or it will think it's unrecognized.
 		$this->emitCode('');
+	}
+
+	protected function handleTagAlter(ToxgToken $token)
+	{
+		// This was already understood by the prebuilder.
+		// Let's emit nothing so it knows it was recognized.
+		$this->emitCode('');
+
+		// We never emit alters, just the alterations they make.
+		if ($token->type === 'tag-start')
+			$this->disable_emit = true;
+		elseif ($token->type === 'tag-end')
+			$this->disable_emit = false;
 	}
 
 	protected function handleTagTemplate(ToxgToken $token)
@@ -174,7 +207,7 @@ class ToxgBuilder
 	{
 		// Already hit one, can't have two.
 		if ($this->last_template['stage'] == 2)
-			$token->toss('Only one tpl:content is allowed per template.');
+			$token->toss('tpl_content_twice');
 
 		// Assumption: must be tag-empty (verified by parser.)
 		$this->emitTemplateEnd(false, $token);
@@ -189,43 +222,43 @@ class ToxgBuilder
 		$template = $this->prebuilder->getTemplateForCall($token);
 		$name = addcslashes($template['name'], '\\\'');
 
-		// This means we're passing through the value of $__toxg_params as-is.
-		if (count($token->attributes) === 1 && isset($token->attributes[ToxgTemplate::TPL_NAMESPACE . ':all']))
-			$args = true;
+		if (isset($token->attributes[ToxgTemplate::TPL_NAMESPACE . ':inherit']))
+			$inherit = preg_split('~[ \t\r\n]+~', $token->attributes[ToxgTemplate::TPL_NAMESPACE . ':inherit']);
 		else
+			$inherit = array();
+
+		$args_escaped = array();
+		$arg_names = array_merge($inherit, $this->common_vars);
+
+		// When calling, we pass along the common vars.
+		foreach ($this->common_vars as $var_name)
 		{
-			$args = array();
-
-			// When calling, we pass along the common vars.
-			foreach ($this->common_vars as $var_name)
-			{
-				$k = '\'' . addcslashes(ToxgExpression::makeVarName($var_name), '\\\'') . '\'';
-				$args[] = $k . ' => ' . ToxgExpression::variable('{$' . $var_name . '}', $token);
-			}
-
-			// We also pass any attributes along.
-			$arg_names = array();
-			foreach ($token->attributes as $k => $v)
-			{
-				$arg_names[] = ToxgExpression::makeVarName($k);
-
-				$k = '\'' . addcslashes(ToxgExpression::makeVarName($k), '\\\'') . '\'';
-				$args[] = $k . ' => ' . ToxgExpression::stringWithVars($v, $token);
-			}
-
-			// This checks the requires parameter to make sure they passed everything necessary.
-			$required = array_diff($template['requires'], $arg_names);
-			if (!empty($required))
-				$token->toss('Template ' . $token->prettyName() . ' is missing the following attributes: ' . implode(', ', $required));
+			$k = '\'' . addcslashes(ToxgExpression::makeVarName($var_name), '\\\'') . '\'';
+			$args_escaped[] = $k . ' => ' . $this->parseExpression('variable', '{$' . $var_name . '}', $token);
 		}
 
+		// Pass any attributes along.
+		foreach ($token->attributes as $k => $v)
+		{
+			$arg_names[] = ToxgExpression::makeVarName($k);
+
+			$k = '\'' . addcslashes(ToxgExpression::makeVarName($k), '\\\'') . '\'';
+			$args_escaped[] = $k . ' => ' . $this->parseExpression('stringWithVars', $v, $token);
+		}
+
+		// This checks the requires parameter to make sure they passed everything necessary.
+		$required = array_diff($template['requires'], $arg_names, $inherit);
+		// If they used inherit="*", we can't really tell...
+		if (!empty($required) && !in_array('*', $inherit))
+			$token->toss('template_missing_required', $token->prettyName(), implode(', ', $required));
+
 		if ($token->type == 'tag-start' || $token->type == 'tag-empty')
-			$this->emitTagCall($name . '_above', $args, true, $template, $token);
+			$this->emitTagCall($name . '_above', $args_escaped, $inherit, true, $template, $token);
 		if ($token->type == 'tag-end' || $token->type == 'tag-empty')
-			$this->emitTagCall($name . '_below', $args, false, $template, $token);
+			$this->emitTagCall($name . '_below', $args_escaped, $inherit, false, $template, $token);
 	}
 
-	protected function emitTagCall($escaped_name, $escaped_arg_list, $first, $template, ToxgToken $token)
+	protected function emitTagCall($escaped_name, array $args_escaped, array $args_inherit, $first, $template, ToxgToken $token)
 	{
 		// Do we know for sure that it is defined?  If so, we can skip an if.
 		if (!$template['defined'])
@@ -235,10 +268,14 @@ class ToxgBuilder
 		{
 			$this->emitCode('global $__toxg_argstack; if (!isset($__toxg_argstack)) $__toxg_argstack = array();', $token);
 
-			if ($escaped_arg_list === true)
-				$this->emitCode('$__toxg_args = $__toxg_params; $__toxg_argstack[] = &$__toxg_args;', $token);
+			if (in_array('*', $args_inherit))
+				$this->emitCode('$__toxg_args = array(' . implode(', ', $args_escaped) . ') + $__toxg_params;', $token);
+			elseif (!empty($args_inherit))
+				$this->emitCode('$__toxg_args = array(' . implode(', ', $args_escaped) . ') + array_intersect_key($__toxg_params, array_flip(' . var_export($args_inherit, true) . '));', $token);
 			else
-				$this->emitCode('$__toxg_args = array(' . implode(', ', $escaped_arg_list) . '); $__toxg_argstack[] = &$__toxg_args;', $token);
+				$this->emitCode('$__toxg_args = array(' . implode(', ', $args_escaped) . ');', $token);
+
+			$this->emitCode('$__toxg_argstack[] = &$__toxg_args;', $token);
 		}
 		else
 			$this->emitCode('global $__toxg_argstack; $__toxg_args = array_pop($__toxg_argstack);', $token);
@@ -256,7 +293,7 @@ class ToxgBuilder
 		$this->emitCode('extract($__toxg_params, EXTR_SKIP);', $token);
 
 		if ($this->debugging)
-			$this->emitCode('ToxgErrors::register();');
+			$this->emitCode($this->getErrorClassName() . '::register();');
 	}
 
 	protected function emitTemplateEnd($last, $token)
@@ -269,20 +306,27 @@ class ToxgBuilder
 		}
 
 		if ($this->debugging)
-			$this->emitCode('ToxgErrors::restore();');
+			$this->emitCode($this->getErrorClassName() . '::restore();');
 
 		$this->emitCode('}', $token);
 	}
 
 	public function finalize()
 	{
+		// We embed usage data for preloading/efficiency purposes.
+		$usage = $this->prebuilder->getTemplateUsage();
+		$this->emitCode($this->getUsageClassName() . '::markUsage(' . var_export($usage, true) . ');');
+
+		// !!! Emit something here for hooks?
+
 		// Just end the file now.
 		$this->emitCode(' ?>');
-		fclose($this->data);
+		if ($this->data_close)
+			fclose($this->data);
 		$this->data = null;
 
 		if ($this->last_template !== null)
-			throw new ToxgException('Finished template cache file with an open template.', '', 0);
+			throw new ToxgException('builder_unclosed_template');
 	}
 
 	public function emitCode($code, ToxgToken $token = null)
@@ -341,7 +385,7 @@ class ToxgBuilder
 				// If we're not inside a string already, start one with debug info.
 				if (!$in_string)
 				{
-					if ($this->emitDebugPos($node['token'], 'echo'))
+					if ($node['token'] !== null && $this->emitDebugPos($node['token'], 'echo'))
 						$first = true;
 					$this->emitCodeInternal(($first ? 'echo ' : ', ') . '\'');
 					$in_string = true;
@@ -358,7 +402,7 @@ class ToxgBuilder
 				}
 
 				// Just in case the position has changed for some reason (overlay, etc.)
-				if ($this->emitDebugPos($node['token'], 'echo'))
+				if ($node['token'] !== null && $this->emitDebugPos($node['token'], 'echo'))
 					$first = true;
 
 				$this->emitCodeInternal(($first ? 'echo ' : ', ') . $node['data']);
@@ -377,6 +421,7 @@ class ToxgBuilder
 	protected function emitCodeInternal($code)
 	{
 		// Don't output any \r's, we use 't' mode, so those are automatic.
+		// !!!SLOW Can we remove this str_replace?  Just need to test line numbers matching on mac/linux/windows with several line ending types.
 		$this->fwrite(str_replace("\r", '', $code));
 		$this->last_line += substr_count($code, "\n");
 	}
@@ -401,10 +446,10 @@ class ToxgBuilder
 			// Okay, this means the line number was lower (template?) so let's go.
 		}
 
-		// This triggers the error system to remap the caller's file/line with the specified.
 		if ($type === 'echo')
 			$this->fwrite(';');
-		$this->fwrite("\n" . 'ToxgErrors::remap(\'' . addcslashes(realpath($token->file), '\\\'') . '\', ' . (int) $token->line . ');');
+		// This triggers the error system to remap the caller's file/line with the specified.
+		$this->fwrite("\n" . $this->getErrorClassName() . '::remap(\'' . addcslashes(realpath($token->file), '\\\'') . '\', ' . (int) $token->line . ');');
 
 		$this->last_file = $token->file;
 		$this->last_line = $token->line;
@@ -417,7 +462,22 @@ class ToxgBuilder
 			return;
 
 		if (@fwrite($this->data, $string) === false)
-			throw new ToxgException('Unable to write to template cache file.', '', 0);
+			throw new ToxgException('builder_cannot_write');
+	}
+
+	public function parseExpression($type, $expression, ToxgToken $token, $accept_raw = false)
+	{
+		return ToxgExpression::$type($expression, $token, $accept_raw);
+	}
+
+	protected function getErrorClassName()
+	{
+		return 'ToxgErrors';
+	}
+
+	protected function getUsageClassName()
+	{
+		return 'ToxgTemplate';
 	}
 }
 ?>

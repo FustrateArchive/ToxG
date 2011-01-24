@@ -217,4 +217,137 @@ function test_output_028($harness)
 	$harness->addWrappedData('{$common} <tpl:content />{$common}');
 }
 
+function test_output_029($harness)
+{
+	// !!! Known bug: we want to know if this changes.
+	$harness->expectOutput('fail');
+	$harness->addData('
+		<tpl:container xmlns:blah="urn:toxg-example:1">
+			<tpl:template name="blah:name">pass</tpl:template>
+			<tpl:template name="blah:name" xmlns:blah="urn:toxg-example:2">fail</tpl:template>
+			<tpl:template name="my:output"><blah:name /></tpl:template>
+		</tpl:container>');
+}
+
+function test_output_030($harness)
+{
+	$harness->expectOutput('pass');
+	$harness->addData('
+		<tpl:template name="my:output">as</tpl:template>
+		<tpl:alter match="my:output" position="before">p</tpl:alter>
+		<tpl:alter match="my:output" position="after">s</tpl:alter>');
+}
+
+function test_output_031($harness)
+{
+	$harness->expectOutput('pass');
+	$harness->addData('
+		<tpl:template name="my:output"><my:stuff /></tpl:template>
+		<tpl:template name="my:stuff">p<tpl:content />s</tpl:template>
+		<tpl:alter match="my:stuff" position="beforecontent">a</tpl:alter>
+		<tpl:alter match="my:stuff" position="aftercontent">s</tpl:alter>');
+}
+
+function test_output_032($harness)
+{
+	$harness->expectOutput('pass');
+	$harness->addData('
+		<tpl:container xmlns:blah="http://www.example.com/#blah1">
+			<tpl:template name="my:output"><tpl:if test="ToxgTemplate::isTemplateUsed(\'http://www.example.com/#blah1\', \'checkme\')">pass<tpl:else />fail</tpl:if></tpl:template>
+			<tpl:template name="my:stuff"><blah:checkme /></tpl:template>
+		</tpl:container>');
+}
+
+function test_output_033($harness)
+{
+	$harness->expectOutput('pass');
+	$harness->addData('
+		<tpl:container xmlns:blah="http://www.example.com/#blah2">
+			<tpl:template name="my:output"><tpl:if test="ToxgTemplate::isTemplateUsed(\'http://www.example.com/#blah2\', \'checkme\')">pass<tpl:else />fail</tpl:if></tpl:template>
+			<tpl:template name="my:stuff"></tpl:template>
+		</tpl:container>');
+	$harness->addOverlay('<tpl:alter match="my:stuff" position="after" xmlns:blah="http://www.example.com/#blah2"><blah:checkme /></tpl:alter>');
+}
+
+function test_output_034($harness)
+{
+	$harness->expectOutput('pass');
+	$harness->addData('
+		<tpl:container xmlns:blah="http://www.example.com/#blah3">
+			<tpl:template name="my:output"><tpl:if test="ToxgTemplate::isTemplateUsed(\'http://www.example.com/#blah3\', \'checkme\')">fail<tpl:else />pass</tpl:if></tpl:template>
+			<tpl:template name="blah:checkme"></tpl:template>
+		</tpl:container>');
+}
+
+function test_output_035($harness)
+{
+	$harness->expectOutput('pass');
+	$harness->addData('
+		<tpl:container xmlns:blah="http://www.example.com/#blah4">
+			<tpl:template name="my:output"><tpl:if test="ToxgTemplate::isTemplateUsed(\'http://www.example.com/#blah4\', \'checkme\')">fail<tpl:else />pass</tpl:if></tpl:template>
+		</tpl:container>');
+	$harness->addOverlay('<tpl:alter match="my:stuff" position="after" xmlns:blah="http://www.example.com/#blah4"><blah:checkme /></tpl:alter>');
+}
+
+function test_output_036($harness)
+{
+	$harness->expectOutput('<input />');
+	$harness->addWrappedData('<tpl:element tpl:name="input" />');
+}
+
+function test_output_037($harness)
+{
+	$harness->expectOutput('<input type="text" name="test" />');
+	$harness->addWrappedData('<tpl:element tpl:name="input" type="text" name="test" />');
+}
+
+function test_output_038($harness)
+{
+	$harness->expectOutput('<input type="text" name="pass" />');
+	$harness->addData('
+		<tpl:template name="my:output"><my:fake-input type="text" name="pass" /></tpl:template>
+		<tpl:template name="my:fake-input"><tpl:element tpl:name="input" tpl:inherit="*" /></tpl:template>');
+}
+
+function test_output_039($harness)
+{
+	$harness->expectOutput('<input value="hello" type="text" name="pass" />');
+	$harness->addData('
+		<tpl:template name="my:output"><my:fake-input type="text" name="pass" /></tpl:template>
+		<tpl:template name="my:fake-input"><tpl:element tpl:name="input" tpl:inherit="*" value="hello" /></tpl:template>');
+}
+
+function test_output_040($harness)
+{
+	$harness->expectOutput('<input value="hello" type="text" name="pass" />');
+	$harness->addData('
+		<tpl:template name="my:output"><my:fake-input type="text" name="pass" value="goodbye" /></tpl:template>
+		<tpl:template name="my:fake-input"><tpl:element tpl:name="input" tpl:inherit="*" value="hello" /></tpl:template>');
+}
+
+function test_output_041($harness)
+{
+	$harness->expectOutput('<select name="pass" />');
+	$harness->addData('
+		<tpl:template name="my:output"><my:fake-input tag="select" name="pass" /></tpl:template>
+		<tpl:template name="my:fake-input"><tpl:element tpl:name="{$tag}" name="{$name}" /></tpl:template>');
+}
+
+function test_output_042($harness)
+{
+	$harness->expectOutput('<select name="pass" />');
+	$harness->addData('
+		<tpl:template name="my:output"><my:fake-input tag="select" name="pass" fail="fail" /></tpl:template>
+		<tpl:template name="my:fake-input"><tpl:element tpl:name="{$tag}" tpl:inherit="name" /></tpl:template>');
+}
+
+function test_output_043($harness)
+{
+	$harness->expectOutput('pass');
+	$harness->addData('
+		<tpl:template name="my:output"><my:fake-input tag="select" name="pass" fail="fail" /></tpl:template>
+		<tpl:template name="my:fake-input"><my:fake-input2 tpl:inherit="name" /></tpl:template>
+		<tpl:template name="my:fake-input2">{$name}</tpl:template>');
+}
+
 ?>

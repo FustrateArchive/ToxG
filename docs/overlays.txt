@@ -30,7 +30,7 @@ match.  All of these have to have namespace prefixes, so that they apply to the
 correct template no matter how it is referenced.
 
 Usually, you'll put your namespace definitions on a tpl:container around any
-tpl:alters you might use, instad of on each one, though.
+tpl:alters you might use, instead of on each tpl:alter, though.
 
 The list is space separated, and will be applied to all of the matching
 templates.
@@ -94,7 +94,45 @@ aftercontent
 		I guess.
 	</tpl:alter>
 
-	Unknown W. Brackets iis cool.  I guess.  That's all you can say.
+	Unknown W. Brackets is cool.  I guess.  That's all you can say.
+
+
+Nesting
+--------------------------------------------------------------------------------
+It's important to note that elements don't need to be properly nested within
+alternations, as long as the resulting template would be properly nested.
+
+As an example, take the following:
+
+	<tpl:template name="my:panel">
+		<h2>{$title}</h2>
+		<tpl:content />
+	</tpl:template>
+
+	<my:panel title="Stuff">
+		This is some stuff.
+	</my:panel>
+
+Now, let's create an alternation (actually two) to simply not show that title
+at all.  We do this using tpl:if, like so:
+
+	<tpl:alter match="my:panel" position="before">
+		<tpl:if test="false">
+	</tpl:alter>
+
+	<tpl:alter match="my:panel" position="beforecontent">
+		</tpl:if>
+	</tpl:alter>
+
+Presto, it's gone.  The important thing is that the template, after being
+altered, had correct nesting.  It would've looked like this:
+
+	<tpl:template name="my:panel">
+		<tpl:if test="false">
+			<h2>{$title}</h2>
+		</tpl:if>
+		<tpl:content />
+	</tpl:template>
 
 
 Variables
@@ -108,3 +146,5 @@ For example:
 			This is the llama one I want to alter.
 		</tpl:if>
 	</tpl:alter>
+
+	<my:something class="llama" />

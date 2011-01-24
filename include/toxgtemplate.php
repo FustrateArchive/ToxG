@@ -2,7 +2,7 @@
 
 class ToxgTemplate
 {
-	const VERSION = "0.1-alpha1";
+	const VERSION = '0.1-alpha4';
 	// !!! Need a domain name/final name/etc.?
 	const TPL_NAMESPACE = 'urn:toxg:template';
 
@@ -14,6 +14,8 @@ class ToxgTemplate
 	protected $common_vars = array();
 	protected $debugging = true;
 	protected $overlayCalls = array();
+
+	protected static $usage = array();
 
 	public function __construct($source_file, $builder = null)
 	{
@@ -94,7 +96,7 @@ class ToxgTemplate
 		foreach ($this->source_files as $source_file)
 		{
 			// Each parser will check for duplicates, so we use a new one for each file.
-			$parser = new ToxgParser($source_file);
+			$parser = $this->createParser($source_file);
 			$parser->setNamespaces($this->namespaces);
 
 			// These both install hooks into the parser, which calls them as necessary.
@@ -117,23 +119,70 @@ class ToxgTemplate
 		$this->builder->setCommonVars($this->common_vars);
 		$this->builder->setCacheFile($cache_file);
 
-		// Each source file is processed one at a time, the builder omits duplicates.
-		foreach ($this->source_files as $source_file)
+		try
 		{
-			// Each parser will check for duplicates, so we use a new one for each file.
-			$parser = new ToxgParser($source_file);
-			$parser->setNamespaces($this->namespaces);
+			// Each source file is processed one at a time, the builder omits duplicates.
+			foreach ($this->source_files as $source_file)
+			{
+				// Each parser will check for duplicates, so we use a new one for each file.
+				$parser = $this->createParser($source_file);
+				$parser->setNamespaces($this->namespaces);
 
-			// These both install hooks into the parser, which calls them as necessary.
-			foreach ($this->overlays as $overlay)
-				$overlay->setupParser($parser);
-			$this->builder->setupParser($parser);
+				// These both install hooks into the parser, which calls them as necessary.
+				foreach ($this->overlays as $overlay)
+					$overlay->setupParser($parser);
+				$this->builder->setupParser($parser);
 
-			// And this is the crux of the whole operation.
-			$parser->parse();
+				// And this is the crux of the whole operation.
+				$parser->parse();
+			}
+
+			$this->builder->finalize();
 		}
+		// Anything goes wrong, we kill the cache file.
+		catch (Exception $e)
+		{
+			$this->builder->abort();
+			@unlink($cache_file);
 
-		$this->builder->finalize();
+			throw $e;
+		}
+	}
+
+	protected function createParser($source_file)
+	{
+		return new ToxgParser($source_file);
+	}
+
+	public static function callTemplate($nsuri, $name, $params, $side = 'both')
+	{
+		$prefix = ToxgExpression::makeTemplateName($nsuri, $name . '--toxg-direct');
+		$above = $prefix . '_above';
+		$below = $prefix . '_below';
+
+		if (!function_exists($above))
+			throw new Exception('Unable to find template named ' . $name . ' in namespace ' . $nsuri);
+
+		if ($side === 'both' || $side == 'above')
+			$above($params);
+		if ($side === 'both' || $side == 'below')
+			$below($params);
+	}
+
+	public static function markUsage($usage_info)
+	{
+		foreach ($usage_info as $nsuri => $names)
+		{
+			if (!isset(self::$usage[$nsuri]))
+				self::$usage[$nsuri] = array();
+
+			self::$usage[$nsuri] += $names;
+		}
+	}
+
+	public static function isTemplateUsed($nsuri, $name)
+	{
+		return isset(self::$usage[$nsuri][$name]);
 	}
 }
 ?>

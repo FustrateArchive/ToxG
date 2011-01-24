@@ -11,8 +11,9 @@ class ToxgTemplateList
 	protected $templates = array();
 	protected $overlayCalls = array();
 
-	public function __construct()
+	public function __construct($builder = null)
 	{
+		$this->builder = $builder;
 	}
 
 	public function callOverlays(array $overlays, array $ns)
@@ -69,7 +70,7 @@ class ToxgTemplateList
 
 	protected function setupTemplate($template)
 	{
-		$object = new ToxgTemplate($template['source_file'], $this->builder);
+		$object = $this->createTemplate($template['source_file']);
 		
 		foreach ($template['inherited_files'] as $file)
 			$object->addInheritedFile($file);
@@ -82,6 +83,11 @@ class ToxgTemplateList
 		$object->setPrebuilder($this->prebuilder);
 
 		return $object;
+	}
+
+	protected function createTemplate($source_file)
+	{
+		return new ToxgTemplate($source_file, $this->builder);
 	}
 
 	public function compileAll()

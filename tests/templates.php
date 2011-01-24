@@ -117,4 +117,10 @@ function test_template_012($harness)
 	$harness->addData('{tpl:template name="my:asdf" requires="asdf qwer"}{my:asdf2 var="{$asdf}"} test {/my:asdf2}{/tpl:template}');
 }
 
+function test_template_013($harness)
+{
+	$harness->expectFailure(1);
+	$harness->addWrappedData('<tpl:template name="my:asdf"></tpl:template>');
+}
+
 ?>

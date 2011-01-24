@@ -57,13 +57,16 @@ class ToxgToken
 		return $this->ns . ':' . $this->name;
 	}
 
-	public function toss($message)
+	public function toss($id_message)
 	{
 		// For error messages, we always really want after the newline, anyway.
 		if ($this->data[0] === "\n")
 			$this->line += strspn($this->data, "\n");
 
-		throw new ToxgException($message, $this->file, $this->line);
+		$params = func_get_args();
+		$params = array_slice($params, 1);
+
+		throw new ToxgExceptionFile($this->file, $this->line, $id_message, $params);
 	}
 
 	protected function parseStart()
@@ -83,8 +86,7 @@ class ToxgToken
 		$end_offset = $this->type == 'tag-start' ? 1 : 2;
 
 		if ($this->data_pos < strlen($this->data) - $end_offset)
-			throw new ToxgException('Malformed attributes or unclosed tag.', $this->file, $this->line);
-
+			$this->toss('syntax_invalid_tag');
 	}
 
 	protected function parseSingleAttribute($pos = 0)
@@ -107,7 +109,7 @@ class ToxgToken
 		$this->setNamespace();
 
 		if ($this->data_pos < strlen($this->data) - 1)
-			throw new ToxgException('Malformed attributes or unclosed end tag.', $this->file, $this->line);
+			$this->toss('syntax_invalid_tag_end');
 	}
 
 	protected function setNamespace()
@@ -125,7 +127,7 @@ class ToxgToken
 		// None of these are valid name chars, but they all end the name.
 		$after_name = $this->firstPosOf(array(' ', "\t", "\r", "\n", '=', '/', '>', '}'));
 		if ($after_name === false)
-			throw new ToxgException('Malformed tag or attribute: name without end.', $this->file, $this->line);
+			$this->toss('syntax_name_unterminated');
 
 		$ns_mark = $this->firstPosOf(':');
 		if ($ns_mark !== false && $ns_mark < $after_name)
@@ -135,14 +137,14 @@ class ToxgToken
 			$this->data_pos++;
 
 			if (!ToxgSource::validNCName($ns))
-				throw new ToxgException('Malformed tag or attribute: invalid namespace.', $this->file, $this->line);
+				$this->toss('syntax_name_ns_invalid');
 		}
 		else
 			$ns = '';
 
 		$name = $this->eatUntil($after_name);
 		if (!ToxgSource::validNCName($name))
-			throw new ToxgException('Malformed tag or attribute: invalid name.', $this->file, $this->line);
+			$this->toss('syntax_name_invalid');
 
 		$this->eatWhite();
 		return array($ns, $name);
@@ -157,18 +159,18 @@ class ToxgToken
 		list ($ns, $name) = $this->parseName();
 
 		if ($this->data[$this->data_pos] !== '=')
-			throw new ToxgException('Malformed tag or missing attribute value.', $this->file, $this->line);
+			$this->toss('syntax_attr_value_missing');
 		$this->data_pos++;
 
 		$quote_type = $this->data[$this->data_pos];
 		if ($this->data[$this->data_pos] !== '\'' && $this->data[$this->data_pos] !== '"')
-			throw new ToxgException('Malformed tag or unquoted attribute value.', $this->file, $this->line);
+			$this->toss('syntax_attr_value_not_quoted');
 		$this->data_pos++;
 
 		// Look for the same quote mark at the end of the value.
 		$end_quote = $this->firstPosOf($quote_type);
 		if ($end_quote === false)
-			throw new ToxgException('Malformed tag or missing end quote in attribute value.', $this->file, $this->line);
+			$this->toss('syntax_attr_value_unterminated');
 
 		// Grab the value, and then skip the end quote.
 		$this->saveAttribute($ns, $name, $this->eatUntil($end_quote));

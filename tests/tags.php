@@ -95,6 +95,11 @@ function test_tags_foreach_007($harness)
 	$harness->addWrappedOverlay('<tpl:foreach from="{$x}" as="{$y}"><tpl:foreach from="{$y}" as="{$z}">{$z}</tpl:foreach></tpl:foreach>');
 }
 
+function test_tags_foreach_008($harness)
+{
+	$harness->addWrappedData('<tpl:foreach from="{$x}" as="{$y} => {$z}">{$y}: {$z}</tpl:foreach>');
+}
+
 function test_tags_if_001($harness)
 {
 	$harness->addWrappedData('<tpl:if test="{$x} == 1">test</tpl:if>');
@@ -305,6 +310,38 @@ function test_tags_container_002($harness)
 function test_tags_container_003($harness)
 {
 	$harness->addWrappedData('<tpl:container xmlns:x="y"></tpl:container>');
+}
+
+function test_tags_element_001($harness)
+{
+	$harness->addWrappedData('<tpl:element tpl:name="div" />');
+}
+
+function test_tags_element_002($harness)
+{
+	$harness->addWrappedData('<tpl:element tpl:name="div" tpl:inherit="*" />');
+}
+
+function test_tags_element_003($harness)
+{
+	$harness->addWrappedData('<tpl:element tpl:name="div" value="1" />');
+}
+
+function test_tags_element_004($harness)
+{
+	$harness->addWrappedData('<tpl:element tpl:name="div" tpl:inherit="*" value="1" />');
+}
+
+function test_tags_element_005($harness)
+{
+	$harness->expectFailure(1);
+	$harness->addWrappedData('<tpl:element />');
+}
+
+function test_tags_element_006($harness)
+{
+	$harness->expectFailure(1);
+	$harness->addWrappedData('<tpl:element tpl:name="" />');
 }
 
 ?>

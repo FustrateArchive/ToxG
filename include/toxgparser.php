@@ -4,35 +4,21 @@ class ToxgParser
 {
 	protected $sources = array();
 	protected $primary = null;
-	protected $primary_fp = null;
 	protected $listeners = array();
 	protected $inside_cdata = false;
 	protected $tree = array();
 	protected $templates = array();
-	protected $last_template = null;
+	protected $state = 'outside';
 
 	public function __construct($file)
 	{
 		if ($file instanceof ToxgSource)
-			$this->primary = $file;
-		else
 		{
-			$this->primary_fp = @fopen($file, 'rt');
-			if (!$this->primary_fp)
-			{
-				$this->primary_fp = null;
-				throw new ToxgException('Unable to open template file: ' . $file, '', 0);
-			}
-
-			$this->primary = new ToxgSource($this->primary_fp, $file);
+			$this->primary = $file;
+			$this->primary->initialize();
 		}
-	}
-
-	public function __destruct()
-	{
-		if ($this->primary_fp !== null)
-			fclose($this->primary_fp);
-		$this->primary_fp = null;
+		else
+			$this->primary = new ToxgSourceFile($file);
 	}
 
 	public function setNamespaces(array $uris)
@@ -45,15 +31,14 @@ class ToxgParser
 		$this->listeners[$type][] = $callback;
 	}
 
-	protected function fire($type, array $args)
+	protected function fire($type, ToxgToken $token)
 	{
 		if (empty($this->listeners[$type]))
 			return;
 
-		$args[] = $this;
 		foreach ($this->listeners[$type] as $callback)
 		{
-			$result = call_user_func_array($callback, $args);
+			$result = call_user_func($callback, $token, $this);
 			if ($result === false)
 				break;
 		}
@@ -62,7 +47,7 @@ class ToxgParser
 	public function insertSource($source, $defer = false)
 	{
 		if (!($source instanceof ToxgSource) && !($source instanceof ToxgToken))
-			throw new ToxgException('The inserted source must be either a ToxgSource or ToxgToken.', '', 0);
+			throw new ToxgException('parsing_invalid_source_type');
 
 		array_unshift($this->sources, $source);
 
@@ -95,7 +80,7 @@ class ToxgParser
 		if (!empty($this->tree))
 		{
 			$token = array_pop($this->tree);
-			throw new ToxgException('Unclosed element ' . $token->prettyName() . ' started at ' . $token->file . ', line ' . $token->line . '.', '', 0);
+			throw new ToxgException('parsing_element_incomplete', $token->prettyName(), $token->file, $token->line);
 		}
 	}
 
@@ -109,7 +94,7 @@ class ToxgParser
 	protected function parseNextSource()
 	{
 		if (empty($this->sources))
-			throw new ToxgException('Internal parsing error.', '', 0);
+			throw new ToxgException('parsing_internal_error');
 
 		$source = $this->sources[0];
 
@@ -127,6 +112,12 @@ class ToxgParser
 		}
 
 		$this->debugToken($token);
+		$this->parseNextToken($token);
+	}
+
+	protected function parseNextToken(ToxgToken $token)
+	{
+		$this->parseFixEmptyCall($token);
 
 		switch ($token->type)
 		{
@@ -165,16 +156,29 @@ class ToxgParser
 		}
 	}
 
+	protected function parseFixEmptyCall(ToxgToken &$token)
+	{
+		if ($token->type === 'tag-empty' && $token->nsuri !== ToxgTemplate::TPL_NAMESPACE)
+		{
+			$start = $token->createInject('tag-end', $token->ns, $token->name, $token->attributes);
+			$this->insertSource($start, true);
+
+			// We clone it incase it's owned by an overlay.
+			$token = clone $token;
+			$token->type = 'tag-start';
+		}
+	}
+
 	protected function parseContent(ToxgToken $token)
 	{
 		// Shouldn't have content outside a template.
-		if ($this->last_template === null)
+		if ($this->state === 'outside')
 		{
 			if (trim($token->data) !== '')
-				$token->toss('Unexpected content outside any template definition.');
+				$token->toss('parsing_content_outside_template');
 		}
 		else
-			$this->fire('parsedContent', array($token));
+			$this->fire('parsedContent', $token);
 	}
 
 	protected function parseRef(ToxgToken $token)
@@ -198,7 +202,7 @@ class ToxgParser
 		$this->inside_cdata = $open;
 
 		// Pass it through as if content (still want it outputted.)
-		$this->fire('parsedContent', array($token));
+		$this->fire('parsedContent', $token);
 	}
 
 	protected function parseComment(ToxgToken $token)
@@ -221,7 +225,7 @@ class ToxgParser
 			elseif ($token->name === 'json')
 				$this->handleTagJSON($token);
 			elseif ($token->name === 'alter')
-				$token->toss('Unexpected tpl:alter within template source.');
+				$this->handleTagAlter($token);
 		}
 		// Before we fire the event, save the template vars (before alters insert data.)
 		else
@@ -230,7 +234,7 @@ class ToxgParser
 		if ($token->type === 'tag-start')
 			array_push($this->tree, $token);
 
-		$this->fire('parsedElement', array($token));
+		$this->fire('parsedElement', $token);
 
 		// After we fire the event, for empty tags, we cleanup.
 		if ($token->nsuri !== ToxgTemplate::TPL_NAMESPACE)
@@ -240,21 +244,29 @@ class ToxgParser
 	protected function parseTagEnd(ToxgToken $token)
 	{
 		if (empty($this->tree))
-			$token->toss('Unmatched element ' . $token->prettyName() . ', you closed it already or never opened it.');
+			$token->toss('parsing_tag_already_closed', $token->prettyName());
 
 		$close_token = array_pop($this->tree);
 
 		// Darn, it's not the same one.
 		if ($close_token->nsuri != $token->nsuri || $close_token->name !== $token->name)
-			$token->toss('End tag for ' . $token->prettyName() . ' found instead of ' . $close_token->prettyName() . ', started at ' . $close_token->file . ', line ' . $close_token->line . '.');
+			$token->toss('parsing_tag_end_unmatched', $token->prettyName(), $close_token->prettyName(), $close_token->file, $close_token->line);
+
+		if ($token->nsuri !== ToxgTemplate::TPL_NAMESPACE)
+			$this->handleTagCall($token, 'before');
 
 		// This makes it easier, since they're on the same element after all.
 		$token->attributes = $close_token->attributes;
-		$this->fire('parsedElement', array($token));
+		$this->fire('parsedElement', $token);
 
 		// We might be exiting a template.  These can't be nested.
-		if ($token->nsuri == ToxgTemplate::TPL_NAMESPACE && $token->name === 'template')
-			$this->handleTagTemplateEnd($token);
+		if ($token->nsuri == ToxgTemplate::TPL_NAMESPACE)
+		{
+			if ($token->name === 'template')
+				$this->handleTagTemplateEnd($token);
+			elseif ($token->name === 'alter')
+				$this->handleTagAlterEnd($token);
+		}
 
 		// After we fire the event, we'll cleanup the call variables.
 		if ($token->nsuri !== ToxgTemplate::TPL_NAMESPACE)
@@ -264,31 +276,31 @@ class ToxgParser
 	protected function handleTagTemplate(ToxgToken $token)
 	{
 		if ($token->type === 'tag-empty')
-			$token->toss('Please always use an start tag like <tpl:template name="x:y">, it should have content inside it.');
+			$token->toss('tpl_template_must_be_not_empty');
 		if (!isset($token->attributes['name']))
-			$token->toss('Undefined name attribute for tpl:template.');
+			$token->toss('tpl_template_missing_name');
 
 		if (strpos($token->attributes['name'], ':') === false)
-			$token->toss('Every template should have a namespace, ' . $token->attributes['name'] . ' didn\'t have one.');
+			$token->toss('tpl_template_name_without_ns', $token->attributes['name']);
 
 		// Figure out the namespace and validate it.
 		list ($ns, $name) = explode(':', $token->attributes['name'], 2);
 		$nsuri = $token->getNamespace($ns);
 		if ($nsuri === false)
-			$token->toss('You need to declare namespaces even for templates (' . $ns . ' was undeclared.)');
+			$token->toss('tpl_template_name_unknown_ns', $ns);
 
 		// This is the fully-qualified name, which can/should not be duplicated.
 		$fqname = $nsuri . ':' . $name;
 		if (isset($this->templates[$fqname]))
-			$token->toss('Duplicate tpl:template named ' . $ns . ':' . $name . '.');
+			$token->toss('tpl_template_duplicate_name', $ns . ':' . $name);
 
 		$this->templates[$fqname] = true;
-		$this->last_template = $fqname;
+		$this->state = 'template';
 	}
 
 	protected function handleTagTemplateEnd(ToxgToken $token)
 	{
-		$this->last_template = null;
+		$this->state = 'outside';
 
 		// After a template, we generate a fake template for overlays to apply to.
 		// Note that (in case they don't actually exist) templates don't have overlays
@@ -301,13 +313,13 @@ class ToxgParser
 			$template_attributes['name'] .= '--toxg-direct';
 
 			$call_attributes = array(
-				ToxgTemplate::TPL_NAMESPACE . ':all' => 'true',
+				ToxgTemplate::TPL_NAMESPACE . ':inherit' => '*',
 			);
 
 			$tokens = array(
 				// <tpl:template name="ns:name--toxg-direct">
 				$token->createInject('tag-start', false, 'template', $template_attributes),
-				// <ns:name tpl:all="true">
+				// <ns:name tpl:inherit="*">
 				$token->createInject('tag-start', $ns, $name, $call_attributes),
 				// <tpl:content />
 				$token->createInject('tag-empty', false, 'content'),
@@ -329,8 +341,8 @@ class ToxgParser
 		// If no attributes, we don't need to push/pop, save some cycles.
 		if (empty($token->attributes))
 			return;
-		// No reason if we're using tpl:all.
-		if (count($token->attributes) === 1 && isset($token->attributes[ToxgTemplate::TPL_NAMESPACE . ':all']))
+		// No reason if we're using tpl:inherit="*".
+		if (count($token->attributes) === 1 && isset($token->attributes[ToxgTemplate::TPL_NAMESPACE . ':inherit']) && $token->attributes[ToxgTemplate::TPL_NAMESPACE . ':inherit'] === '*')
 			return;
 
 		// Overlays and content should be able to reference the attributes in the call.
@@ -356,7 +368,7 @@ class ToxgParser
 	{
 		// Doesn't make sense for these to have content, so warn.
 		if ($token->type === 'tag-start')
-			$token->toss('Please always use an empty tag like <tpl:content />, it cannot have content inside it.');
+			$token->toss('tpl_content_must_be_empty');
 
 		// This can't be used in loops, ifs, or anything really except tpl:template and tpl:container.
 		// Other template calls are allowed too.
@@ -367,16 +379,16 @@ class ToxgParser
 				continue;
 
 			if ($tree_token->name !== 'template' && $tree_token->name !== 'container')
-				$token->toss('You cannot use tpl:content within tpl:if, tpl:foreach, etc.  It must be inside a tpl:template.');
+				$token->toss('tpl_content_inside_invalid');
 		}
 	}
 
 	protected function handleTagOutput(ToxgToken $token)
 	{
 		if ($token->type === 'tag-start')
-			$token->toss('Please always use an empty tag like <tpl:output />, it cannot have content inside it.');
+			$token->toss('tpl_output_must_be_empty');
 		if (!isset($token->attributes['value']))
-			$token->toss('Undefined value attribute for tpl:output.');
+			$token->toss('generic_tpl_missing_required', 'value', $token->prettyName(), 'value');
 
 		// Default the as parameter just like {$x} does.
 		if (!isset($token->attributes['as']))
@@ -386,13 +398,26 @@ class ToxgParser
 	protected function handleTagJSON(ToxgToken $token)
 	{
 		if ($token->type === 'tag-start')
-			$token->toss('Please always use an empty tag like <tpl:json />, it cannot have content inside it.');
+			$token->toss('tpl_json_must_be_empty');
 		if (!isset($token->attributes['value']))
-			$token->toss('Undefined value attribute for tpl:output.');
+			$token->toss('generic_tpl_missing_required', 'value', $token->prettyName(), 'value');
 
 		// Default the as parameter just like {$x} does.
 		if (!isset($token->attributes['as']))
 			$token->attributes['as'] = $this->inside_cdata ? 'raw' : 'html';
+	}
+
+	protected function handleTagAlter(ToxgToken $token)
+	{
+		if ($this->state !== 'outside')
+			$token->toss('tpl_alter_inside_template');
+
+		$this->state = 'alter';
+	}
+
+	protected function handleTagAlterEnd(ToxgToken $token)
+	{
+		$this->state = 'outside';
 	}
 }
 ?>
