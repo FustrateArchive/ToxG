@@ -39,7 +39,7 @@ class ToxgStandardElements
 	// Very useful for alternating backgrounds
 	public function tpl_cycle(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
 	{
-		$this->requireAttributes(array('values'), $token);
+		$this->requireAttributes(array('values'), $attributes, $token);
 
 		// Generate random variables for cycle variables
 		$base = md5(isset($attributes['id']) ? $attributes['id'] : rand(100, 100000));
@@ -64,7 +64,7 @@ class ToxgStandardElements
 		if ($token->type != 'tag-empty')
 			$token->toss('invalid tag type');
 
-		$this->requireAttributes(array('name'), $token);
+		$this->requireAttributes(array('name'), $attributes, $token);
 
 		list ($ns, $name) = explode(':', $attributes['name']);
 		$name = ToxgExpression::stringWithVars($name, $token);
