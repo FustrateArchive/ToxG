@@ -2,58 +2,67 @@
 
 function test_invalid_alter_001($harness)
 {
-	$harness->expectFailure(1);
+	$harness->expectFailure(1, 'tpl_alter_missing_match_position');
 	$harness->addDataForOverlay();
 	$harness->addOverlay('<tpl:alter match="my:output my:example">test</tpl:alter>');
 }
 
 function test_invalid_alter_002($harness)
 {
-	$harness->expectFailure(1);
+	// !!! Maybe not correct error?
+	$harness->expectFailure(1, 'tpl_alter_match_without_ns');
 	$harness->addDataForOverlay();
 	$harness->addOverlay('<tpl:alter match="" position="before">test</tpl:alter>');
 }
 
 function test_invalid_alter_003($harness)
 {
-	$harness->expectFailure(1);
+	$harness->expectFailure(1, 'tpl_alter_missing_match_position');
 	$harness->addDataForOverlay();
 	$harness->addOverlay('<tpl:alter match="">test</tpl:alter>');
 }
 
 function test_invalid_alter_004($harness)
 {
-	$harness->expectFailure(1);
+	$harness->expectFailure(1, 'tpl_alter_missing_match_position');
 	$harness->addDataForOverlay();
 	$harness->addOverlay('<tpl:alter>test</tpl:alter>');
 }
 
 function test_invalid_alter_005($harness)
 {
-	$harness->expectFailure(1);
+	$harness->expectFailure(1, 'tpl_alter_invalid_position');
 	$harness->addDataForOverlay();
 	$harness->addOverlay('<tpl:alter match="my:output my:example" position="blah">test</tpl:alter>');
 }
 
 function test_invalid_alter_006($harness)
 {
-	$harness->expectFailure(1);
+	$harness->expectFailure(1, 'overlay_content_outside_alter');
 	$harness->addDataForOverlay();
 	$harness->addOverlay('<tpl:alter match="my:output my:example" position="before">test</tpl:alter> test');
 }
 
 function test_invalid_alter_007($harness)
 {
-	$harness->expectFailure(1);
+	$harness->expectFailure(1, 'tpl_alter_missing_match_position');
 	$harness->addDataForOverlay();
 	$harness->addOverlay('<tpl:alter match="my:output my:example" position="before"><tpl:alter match="my:output my:example" position="before"></tpl:alter></tpl:alter> test');
 }
 
 function test_invalid_alter_008($harness)
 {
-	$harness->expectFailure(1);
+	$harness->expectFailure(1, 'overlay_other_outside_alter');
 	$harness->addDataForOverlay();
 	$harness->addOverlay('<tpl:alter match="my:output my:example" position="before"/>');
+}
+
+function test_invalid_alter_009($harness)
+{
+	// !!! Maybe not correct error?
+	$harness->expectFailure(1, 'tpl_alter_match_without_ns');
+	$harness->addDataForOverlay();
+	$harness->addOverlay('<tpl:alter match="my:" position="before">test</tpl:alter>');
 }
 
 function test_alter_001($harness)

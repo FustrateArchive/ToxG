@@ -54,19 +54,21 @@ class ToxgTestHarness extends ToxgTemplate
 		$this->layers = $layers;
 	}
 
-	public function expectFailure($line = null)
+	public function expectFailure($line = null, $type = true)
 	{
 		$this->expect_fail_line = $line;
-		$this->expect_fail = true;
+		$this->expect_fail = $type;
 	}
 
 	public function isExceptionFailure($e)
 	{
 		if ($this->expect_fail_line !== null && $e->tpl_line != $this->expect_fail_line)
-			return 'Wrong line: ' . $e->getMessage() . '.';
+			return 'Wrong line: ' . $e->getMessage();
 
-		if (!$this->expect_fail)
+		if ($this->expect_fail === false)
 			return $e->getMessage();
+		if ($this->expect_fail !== true && $this->expect_fail !== $e->getCode())
+			return 'Wrong message: ' . $e->getMessage();
 
 		return false;
 	}
@@ -85,7 +87,7 @@ class ToxgTestHarness extends ToxgTemplate
 
 	public function isFailure()
 	{
-		if ($this->expect_fail)
+		if ($this->expect_fail !== false)
 			return 'Expected to fail with exception.';
 
 		return false;

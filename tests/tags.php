@@ -24,7 +24,7 @@ function test_tags_output_004($harness)
 
 function test_tags_output_005($harness)
 {
-	$harness->expectFailure(1);
+	$harness->expectFailure(1, 'expression_invalid_meta');
 	$harness->addWrappedData('<tpl:output value="bad syn tax" as="raw" />');
 }
 
@@ -46,7 +46,7 @@ function test_tags_raw_002($harness)
 
 function test_tags_raw_003($harness)
 {
-	$harness->expectFailure(1);
+	$harness->expectFailure(1, 'expression_invalid_meta');
 	$harness->addWrappedData('<tpl:raw value="bad syn tax" />');
 }
 
@@ -57,25 +57,25 @@ function test_tags_raw_004($harness)
 
 function test_tags_foreach_001($harness)
 {
-	$harness->expectFailure(1);
+	$harness->expectFailure(1, 'generic_tpl_must_be_not_empty');
 	$harness->addWrappedData('<tpl:foreach from="{$x}" as="{$y}" />');
 }
 
 function test_tags_foreach_002($harness)
 {
-	$harness->expectFailure(1);
+	$harness->expectFailure(1, 'expression_invalid_meta');
 	$harness->addWrappedData('<tpl:foreach from="{$x}" as="failure"></tpl:foreach>');
 }
 
 function test_tags_foreach_003($harness)
 {
-	$harness->expectFailure(1);
+	$harness->expectFailure(1, 'tpl_foreach_invalid_from');
 	$harness->addWrappedData('<tpl:foreach from="failure" as="{$x}"></tpl:foreach>');
 }
 
 function test_tags_foreach_004($harness)
 {
-	$harness->expectFailure(1);
+	$harness->expectFailure(1, 'expression_invalid_meta');
 	$harness->addWrappedData('<tpl:foreach from="failure" as="failure"></tpl:foreach>');
 }
 
@@ -107,19 +107,19 @@ function test_tags_if_001($harness)
 
 function test_tags_if_002($harness)
 {
-	$harness->expectFailure(1);
+	$harness->expectFailure(1, 'expression_invalid_meta');
 	$harness->addWrappedData('<tpl:if test="">test</tpl:if>');
 }
 
 function test_tags_if_003($harness)
 {
-	$harness->expectFailure(1);
+	$harness->expectFailure(1, 'expression_invalid_meta');
 	$harness->addWrappedData('<tpl:if test="I am a goat.">test</tpl:if>');
 }
 
 function test_tags_if_004($harness)
 {
-	$harness->expectFailure(1);
+	$harness->expectFailure(1, 'generic_tpl_must_be_empty');
 	$harness->addWrappedData('<tpl:if test="1">test<tpl:else>2</tpl:else></tpl:if>');
 }
 
@@ -146,7 +146,7 @@ function test_tags_flush_001($harness)
 
 function test_tags_flush_002($harness)
 {
-	$harness->expectFailure(1);
+	$harness->expectFailure(1, 'generic_tpl_must_be_empty');
 	$harness->addWrappedData('<tpl:flush></tpl:flush>');
 }
 
@@ -158,37 +158,37 @@ function test_tags_flush_003($harness)
 
 function test_tags_set_001($harness)
 {
-	$harness->expectFailure(1);
+	$harness->expectFailure(1, 'generic_tpl_must_be_empty');
 	$harness->addWrappedData('<tpl:set></tpl:set>');
 }
 
 function test_tags_set_002($harness)
 {
-	$harness->expectFailure(1);
+	$harness->expectFailure(1, 'generic_tpl_must_be_empty');
 	$harness->addWrappedData('<tpl:set var="{$x}" value="{$y}"></tpl:set>');
 }
 
 function test_tags_set_003($harness)
 {
-	$harness->expectFailure(1);
+	$harness->expectFailure(1, 'generic_tpl_must_be_empty');
 	$harness->addWrappedData('<tpl:set var="{$x}" value="1"></tpl:set>');
 }
 
 function test_tags_set_004($harness)
 {
-	$harness->expectFailure(1);
+	$harness->expectFailure(1, 'expression_invalid_meta');
 	$harness->addWrappedData('<tpl:set var="2" value="1" />');
 }
 
 function test_tags_set_005($harness)
 {
-	$harness->expectFailure(1);
+	$harness->expectFailure(1, 'generic_tpl_missing_required');
 	$harness->addWrappedData('<tpl:set var="{$x}" />');
 }
 
 function test_tags_set_006($harness)
 {
-	$harness->expectFailure(1);
+	$harness->expectFailure(1, 'generic_tpl_missing_required');
 	$harness->addWrappedData('<tpl:set value="{$x}" />');
 }
 
@@ -232,7 +232,7 @@ function test_tags_json_004($harness)
 
 function test_tags_json_005($harness)
 {
-	$harness->expectFailure(1);
+	$harness->expectFailure(1, 'expression_invalid_meta');
 	$harness->addWrappedData('<tpl:json value="bad syn tax" as="raw" />');
 }
 
@@ -243,25 +243,25 @@ function test_tags_json_006($harness)
 
 function test_tags_default_001($harness)
 {
-	$harness->expectFailure(1);
+	$harness->expectFailure(1, 'generic_tpl_must_be_empty');
 	$harness->addWrappedData('<tpl:default></tpl:default>');
 }
 
 function test_tags_default_002($harness)
 {
-	$harness->expectFailure(1);
+	$harness->expectFailure(1, 'generic_tpl_must_be_empty');
 	$harness->addWrappedData('<tpl:default var="{$x}" default="{$y}"></tpl:default>');
 }
 
 function test_tags_default_003($harness)
 {
-	$harness->expectFailure(1);
+	$harness->expectFailure(1, 'generic_tpl_must_be_empty');
 	$harness->addWrappedData('<tpl:default var="{$x}" default="1"></tpl:default>');
 }
 
 function test_tags_default_004($harness)
 {
-	$harness->expectFailure(1);
+	$harness->expectFailure(1, 'expression_invalid_meta');
 	$harness->addWrappedData('<tpl:default var="2" default="1" />');
 }
 
@@ -272,7 +272,7 @@ function test_tags_default_005($harness)
 
 function test_tags_default_006($harness)
 {
-	$harness->expectFailure(1);
+	$harness->expectFailure(1, 'generic_tpl_missing_required');
 	$harness->addWrappedData('<tpl:default default="{$x}" />');
 }
 
@@ -334,13 +334,13 @@ function test_tags_element_004($harness)
 
 function test_tags_element_005($harness)
 {
-	$harness->expectFailure(1);
+	$harness->expectFailure(1, 'generic_tpl_empty_attr');
 	$harness->addWrappedData('<tpl:element />');
 }
 
 function test_tags_element_006($harness)
 {
-	$harness->expectFailure(1);
+	$harness->expectFailure(1, 'generic_tpl_empty_attr');
 	$harness->addWrappedData('<tpl:element tpl:name="" />');
 }
 
