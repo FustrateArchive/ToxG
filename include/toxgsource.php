@@ -348,7 +348,10 @@ class ToxgSource
 
 				// We were nested, so just dump out a level.
 				if ($nesting > 0)
+				{
 					$nesting--;
+					continue;
+				}
 				else
 					break;
 			}

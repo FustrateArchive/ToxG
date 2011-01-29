@@ -1,6 +1,6 @@
 <?php
 
-require_once('include.php');
+require_once('include/index.php');
 
 class Toxg
 {
