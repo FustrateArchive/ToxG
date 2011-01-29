@@ -188,7 +188,12 @@ function test_expression_023($harness)
 
 function test_expression_024($harness)
 {
-	$harness->addWrappedData('<tpl:output value="{#lang:{$lang2:1}}" />');
+	$harness->addWrappedData('<tpl:output value="{#lang:{#lang2:1:3:4:5}}" />');
+}
+
+function test_expression_025($harness)
+{
+	$harness->addWrappedData('<tpl:output value="{#lang:{#lang2:1:3:4:5}:6:7}" />');
 }
 
 ?>
