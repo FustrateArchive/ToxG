@@ -3,7 +3,7 @@ TOX-G: Template Overlay XHTML Generator
 
 Version
 --------------------------------------------------------------------------------
-Release 0.1-alpha4 made on 2011-01-22.
+Release 0.1-alpha5 made on 2011-01-29.
 
 
 Overview

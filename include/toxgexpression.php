@@ -45,7 +45,7 @@ class ToxgExpression
 			}
 		}
 
-		return $this->getCode();
+		return $this->validate();
 	}
 
 	public function parseVariable($allow_lang = true)
@@ -61,7 +61,7 @@ class ToxgExpression
 		if ($this->data_pos < $this->data_len)
 			$this->toss('expression_expected_var_only');
 
-		return $this->getCode();
+		return $this->validate();
 	}
 
 	public function parseNormal($accept_raw = false)
@@ -85,12 +85,12 @@ class ToxgExpression
 		}
 
 		if ($this->is_raw && $accept_raw)
-			return array($this->getCode(), true);
+			return array($this->validate(), true);
 		else
-			return $this->getCode();
+			return $this->validate();
 	}
 
-	public function getCode()
+	public function validate()
 	{
 		foreach ($this->built as $part)
 		{
@@ -99,9 +99,9 @@ class ToxgExpression
 				$this->toss('expression_unknown_error');
 		}
 
-		$expr = implode('', $this->built);
+		$expr = $this->getCode();
 
-		// !!! Well, create_function() leaks memory.  Maybe we can avoid this...
+		// !!! Well, create_function() leaks memory because there's no destroy_function().  Maybe we can avoid this...
 		$saved = error_reporting(E_ERROR | E_CORE_ERROR | E_COMPILE_ERROR);
 		$attempt = create_function('', 'return (' . $expr . ');');
 		error_reporting($saved);
@@ -110,6 +110,11 @@ class ToxgExpression
 			$this->toss('expression_unknown_error');
 
 		return $expr;
+	}
+
+	public function getCode()
+	{
+		return implode($this->built);
 	}
 
 	protected function readStringInterpolated()
@@ -146,6 +151,8 @@ class ToxgExpression
 				$this->readLangRef($pos);
 				break;
 			}
+			else
+				$this->toss('expression_expected_ref_nolang');
 
 		default:
 			// This could be a static.  If it is, we have a :: later on.
@@ -338,7 +345,7 @@ class ToxgExpression
 
 	protected function toss($error)
 	{
-		$this->token->toss('expression_invalid_meta', $this->data, $error);
+		$this->token->toss('expression_invalid_meta', $this->data, ToxgException::format($error, array()));
 	}
 
 	protected function eatWhite()

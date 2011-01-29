@@ -265,7 +265,7 @@ class ToxgStandardElements
 			$default = '\'\'';
 
 		// !!! Better way to detect lang use?
-		if ($value[0] !== '$')
+		if (substr($value, 0, 1) !== '$')
 			$builder->emitCode('if (' . $value . ') echo htmlspecialchars(' . $value . ');', $token);
 		else
 			$builder->emitCode('if (!empty(' . $value . ')) echo htmlspecialchars(' . $value . ');', $token);
