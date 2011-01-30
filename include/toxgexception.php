@@ -114,7 +114,7 @@ class ToxgException extends Exception
 		while (count($params) === 1 && is_array($params[0]))
 			$params = $params[0];
 
-		$message = $this->format($id_message, $params);
+		$message = self::format($id_message, $params);
 
 		if ($this->tpl_file === null && $this->tpl_line === 0)
 			parent::__construct($message);
@@ -124,7 +124,7 @@ class ToxgException extends Exception
 		$this->code = $id_message;
 	}
 
-	protected function format($id_message, $params)
+	public static function format($id_message, $params)
 	{
 		if (!isset(self::$messages[$id_message]))
 			return 'UNTRANSLATED: ' . $id_message . ' (' . implode(', ', $params) . ')';

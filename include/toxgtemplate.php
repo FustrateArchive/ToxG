@@ -2,7 +2,7 @@
 
 class ToxgTemplate
 {
-	const VERSION = '0.1-alpha4';
+	const VERSION = '0.1-alpha5';
 	// !!! Need a domain name/final name/etc.?
 	const TPL_NAMESPACE = 'urn:toxg:template';
 

@@ -17,13 +17,6 @@ class ToxgBuilder
 
 	public function __construct()
 	{
-		$this->listeners = array(
-			'tag-start' => array(),
-			'tag-empty' => array(),
-			'tag-end' => array(),
-			'tag-both' => array(),
-			'*' => array(),
-		);
 	}
 
 	public function __destruct()
@@ -97,10 +90,11 @@ class ToxgBuilder
 			// We don't use call_user_func because we want to allow by reference passing.
 			if (is_string($callback))
 				$result = $callback($this, $token->type, $token->attributes, $token);
-			elseif (is_string($callback[0]))
-				$result = $callback[0]::$callback[1]($this, $token->type, $token->attributes, $token);
-			else
+			elseif (!is_string($callback[0]))
 				$result = $callback[0]->$callback[1]($this, $token->type, $token->attributes, $token);
+			// !!! Breaks PHP 5.1 and 5.2 to call these directly.
+			else
+				$result = call_user_func($callback, $this, $token->type, $token->attributes, $token);
 
 			if ($result === false)
 				break;
@@ -240,6 +234,10 @@ class ToxgBuilder
 		// Pass any attributes along.
 		foreach ($token->attributes as $k => $v)
 		{
+			// Don't send this one.
+			if ($k === ToxgTemplate::TPL_NAMESPACE . ':inherit')
+				continue;
+
 			$arg_names[] = ToxgExpression::makeVarName($k);
 
 			$k = '\'' . addcslashes(ToxgExpression::makeVarName($k), '\\\'') . '\'';

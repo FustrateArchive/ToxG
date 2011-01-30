@@ -36,9 +36,9 @@ class MyTheme extends SampleToxgTheme
 		// Inside there, we'll load the data smartly based on what's needed.
 		if ($type === 'tag-start')
 		{
-			$builder->emitCode('$dynamic = ' . __CLASS__ . '::getInstance()->loadDynamic();');
+			$builder->emitCode('$dynamic = ' . __CLASS__ . '::getInstance()->loadDynamic();', $token);
 			// And for illustration:
-			$builder->emitCode('echo \'<em>Loaded:</em><pre>\', htmlspecialchars(print_r($dynamic, true)), \'</pre>\';');
+			$builder->emitCode('echo \'<em>Loaded:</em><pre>\', htmlspecialchars(print_r($dynamic, true)), \'</pre>\';', $token);
 		}
 	}
 

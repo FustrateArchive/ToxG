@@ -45,7 +45,7 @@ class ToxgExpression
 			}
 		}
 
-		return $this->getCode();
+		return $this->validate();
 	}
 
 	public function parseVariable($allow_lang = true)
@@ -61,7 +61,7 @@ class ToxgExpression
 		if ($this->data_pos < $this->data_len)
 			$this->toss('expression_expected_var_only');
 
-		return $this->getCode();
+		return $this->validate();
 	}
 
 	public function parseNormal($accept_raw = false)
@@ -85,12 +85,12 @@ class ToxgExpression
 		}
 
 		if ($this->is_raw && $accept_raw)
-			return array($this->getCode(), true);
+			return array($this->validate(), true);
 		else
-			return $this->getCode();
+			return $this->validate();
 	}
 
-	public function getCode()
+	public function validate()
 	{
 		foreach ($this->built as $part)
 		{
@@ -99,9 +99,9 @@ class ToxgExpression
 				$this->toss('expression_unknown_error');
 		}
 
-		$expr = implode('', $this->built);
+		$expr = $this->getCode();
 
-		// !!! Well, create_function() leaks memory.  Maybe we can avoid this...
+		// !!! Well, create_function() leaks memory because there's no destroy_function().  Maybe we can avoid this...
 		$saved = error_reporting(E_ERROR | E_CORE_ERROR | E_COMPILE_ERROR);
 		$attempt = create_function('', 'return (' . $expr . ');');
 		error_reporting($saved);
@@ -110,6 +110,11 @@ class ToxgExpression
 			$this->toss('expression_unknown_error');
 
 		return $expr;
+	}
+
+	public function getCode()
+	{
+		return implode($this->built);
 	}
 
 	protected function readStringInterpolated()
@@ -137,15 +142,17 @@ class ToxgExpression
 		switch ($this->data[$this->data_pos])
 		{
 		case '$':
-			$this->readVarRef($pos);
+			$this->readVarRef();
 			break;
 
 		case '#':
 			if ($allow_lang)
 			{
-				$this->readLangRef($pos);
+				$this->readLangRef();
 				break;
 			}
+			else
+				$this->toss('expression_expected_ref_nolang');
 
 		default:
 			// This could be a static.  If it is, we have a :: later on.
@@ -154,7 +161,7 @@ class ToxgExpression
 			{
 				$this->built[] = $this->eatUntil($next);
 				$this->built[] = $this->eatUntil($next + 2);
-				$this->readVarRef($pos);
+				$this->readVarRef();
 				break;
 			}
 			// Intentional fall-through on false.
@@ -169,7 +176,7 @@ class ToxgExpression
 		$this->data_pos++;
 	}
 
-	protected function readVarRef($end)
+	protected function readVarRef()
 	{
 		// It looks like this: $xyz.abc[$mno][nilla].$rpg
 		// Which means:
@@ -183,11 +190,11 @@ class ToxgExpression
 		// When we hit a ], there is no item, but just a ].
 
 		$brackets = 0;
-		while ($this->data_pos < $end)
+		while ($this->data_pos < $this->data_len)
 		{
-			$next = $this->firstPosOf(array('[', '.', ']', '->'), 1);
-			if ($next === false || $next > $end)
-				$next = $end;
+			$next = $this->firstPosOf(array('[', '.', ']', '->', '}'), 1);
+			if ($next === false)
+				$next = $this->data_len;
 
 			$c = $this->data[$this->data_pos];
 			$this->data_pos++;
@@ -233,6 +240,11 @@ class ToxgExpression
 				$this->built[] = $this->eatUntil($next);
 				break;
 
+			// All done - but don't skip it, our caller doesn't expect that.
+			case '}':
+				$this->data_pos--;
+				break 2;
+
 			default:
 				// A constant, like a class constant: {Class::CONST}.
 				// We want to grab the "C", so we take a step back and eat.
@@ -250,11 +262,11 @@ class ToxgExpression
 		switch ($this->data[$this->data_pos])
 		{
 		case '$':
-			$this->readVarRef($end);
+			$this->readVarRef();
 			break;
 
 		case '#':
-			$this->readLangRef($end);
+			$this->readLangRef();
 			break;
  
 		case '{':
@@ -295,24 +307,30 @@ class ToxgExpression
 		return true;
 	}
 
-	protected function readLangRef($end)
+	protected function readLangRef()
 	{
 		$this->built[] = self::$lang_function . '(';
 
-		if ($this->data_pos >= $end - 1)
+		if ($this->data_pos >= $this->data_len - 1 || $this->data[$this->data_pos + 1] === ':' || $this->data[$this->data_pos + 1] === '}')
 			$this->toss('expression_lang_name_empty');
 
-		while ($this->data_pos < $end)
+		$first = true;
+		while ($this->data_pos < $this->data_len)
 		{
-			$next = $this->firstPosOf(':', 1);
-			if ($next === false || $next > $end)
-				$next = $end;
+			$next = $this->firstPosOf(array(':', '}'), 1);
+			if ($next === false)
+				$next = $this->data_len;
 
+			$c = $this->data[$this->data_pos];
+			if ($c === '}')
+				break;
 			$this->data_pos++;
-			$this->readVarPart($next, true);
 
-			if ($this->data_pos < $end)
+			if (!$first)
 				$this->built[] = ', ';
+			$first = false;
+
+			$this->readVarPart($next, true);
 		}
 
 		$this->built[] = ')';
@@ -338,7 +356,7 @@ class ToxgExpression
 
 	protected function toss($error)
 	{
-		$this->token->toss('expression_invalid_meta', $this->data, $error);
+		$this->token->toss('expression_invalid_meta', $this->data, ToxgException::format($error, array()));
 	}
 
 	protected function eatWhite()

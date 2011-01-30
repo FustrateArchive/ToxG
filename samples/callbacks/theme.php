@@ -36,7 +36,7 @@ class MyTheme extends SampleToxgTheme
 		$nsuri = $token->getNamespace($ns);
 
 		if ($nsuri == $this->nsuri && $name === 'dynamic')
-			$builder->emitCode('$dynamic = ' . __CLASS__ . '::getInstance()->loadDynamic();');
+			$builder->emitCode('$dynamic = ' . __CLASS__ . '::getInstance()->loadDynamic();', $token);
 	}
 
 	public function loadDynamic()
