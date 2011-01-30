@@ -205,7 +205,6 @@ class ToxgExpression
 				$name = $this->eatUntil($next);
 				if ($name === '')
 					$this->toss('expression_var_name_empty');
-
 				$this->built[] = '$' . self::makeVarName($name);
 				break;
 
@@ -298,8 +297,11 @@ class ToxgExpression
 
 		if ($string == 'raw')
 		{
-			unset($this->built[count($this->built) - 1]);
+			// Get the last index of array
+			$keys = array_keys($this->built);
+			$last_key = $keys[count($keys) - 1];
 
+			unset($this->built[$last_key]);
 			$this->data_pos = $end;
 			$this->is_raw = true;
 		}
