@@ -192,7 +192,7 @@ class ToxgExpression
 		$brackets = 0;
 		while ($this->data_pos < $this->data_len)
 		{
-			$next = $this->firstPosOf(array('[', '.', ']', '->', '}'), 1);
+			$next = $this->firstPosOf(array('[', '.', ']', '->', '}', ':'), 1);
 			if ($next === false)
 				$next = $this->data_len;
 
@@ -205,7 +205,6 @@ class ToxgExpression
 				$name = $this->eatUntil($next);
 				if ($name === '')
 					$this->toss('expression_var_name_empty');
-
 				$this->built[] = '$' . self::makeVarName($name);
 				break;
 
@@ -243,6 +242,12 @@ class ToxgExpression
 			// All done - but don't skip it, our caller doesn't expect that.
 			case '}':
 				$this->data_pos--;
+				break 2;
+
+			// Maybe we're done with this?
+			case ':':
+				$this->built[] = ',';
+				$this->readVarPart($next);
 				break 2;
 
 			default:
@@ -292,8 +297,11 @@ class ToxgExpression
 
 		if ($string == 'raw')
 		{
-			unset($this->built[count($this->built) - 1]);
+			// Get the last index of array
+			$keys = array_keys($this->built);
+			$last_key = $keys[count($keys) - 1];
 
+			unset($this->built[$last_key]);
 			$this->data_pos = $end;
 			$this->is_raw = true;
 		}
