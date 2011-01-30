@@ -192,7 +192,7 @@ class ToxgExpression
 		$brackets = 0;
 		while ($this->data_pos < $this->data_len)
 		{
-			$next = $this->firstPosOf(array('[', '.', ']', '->', '}'), 1);
+			$next = $this->firstPosOf(array('[', '.', ']', '->', '}', ':'), 1);
 			if ($next === false)
 				$next = $this->data_len;
 
@@ -243,6 +243,12 @@ class ToxgExpression
 			// All done - but don't skip it, our caller doesn't expect that.
 			case '}':
 				$this->data_pos--;
+				break 2;
+
+			// Maybe we're done with this?
+			case ':':
+				$this->built[] = ',';
+				$this->readVarPart($next);
 				break 2;
 
 			default:
