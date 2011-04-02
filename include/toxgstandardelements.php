@@ -236,12 +236,12 @@ class ToxgStandardElements
 		if ($type == 'tag-start')
 			$builder->emitCode('ob_start();');
 		elseif ($type == 'tag-end')
-			$builder->emitCode($var . ' ' . ($attributes['incremenet'] ? '.' : '') . '= ob_get_contents(); ob_end_clean();');
+			$builder->emitCode($var . ' ' . ($attributes['increment'] ? '.' : '') . '= ob_get_contents(); ob_end_clean();');
 		else
 		{
 			$value = $builder->parseExpression('normal', $attributes['value'], $token);
 			$this->requireAttributes(array('value'), $attributes, $token);
-			$builder->emitCode($var . ' ' . ($attributes['incremenet'] ? '.' : '') . '= ' . $value . ';', $token);
+			$builder->emitCode($var . ' ' . ($attributes['increment'] ? '.' : '') . '= ' . $value . ';', $token);
 		}
 	}
 
