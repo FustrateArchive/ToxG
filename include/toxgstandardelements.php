@@ -229,13 +229,20 @@ class ToxgStandardElements
 
 	public function tpl_set(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
 	{
-		$this->requireEmpty($token);
-		$this->requireAttributes(array('var', 'value'), $attributes, $token);
+		$this->requireAttributes(array('var'), $attributes, $token);
 
 		$var = $builder->parseExpression('variableNotLang', $attributes['var'], $token);
-		$value = $builder->parseExpression('normal', $attributes['value'], $token);
 
-		$builder->emitCode($var . ' = ' . $value . ';', $token);
+		if ($type == 'tag-start')
+			$builder->emitCode('ob_start();');
+		elseif ($type == 'tag-end')
+			$builder->emitCode($var . ' ' . ($attributes['incremenet'] ? '.' : '') . '= ob_get_contents(); ob_end_clean();');
+		else
+		{
+			$value = $builder->parseExpression('normal', $attributes['value'], $token);
+			$this->requireAttributes(array('value'), $attributes, $token);
+			$builder->emitCode($var . ' ' . ($attributes['incremenet'] ? '.' : '') . '= ' . $value . ';', $token);
+		}
 	}
 
 	public function tpl_json(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
