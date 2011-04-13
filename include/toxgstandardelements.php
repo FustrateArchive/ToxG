@@ -231,17 +231,20 @@ class ToxgStandardElements
 	{
 		$this->requireAttributes(array('var'), $attributes, $token);
 
+		if (empty($attributes['append']))
+			$attributes['append'] = false;
+
 		$var = $builder->parseExpression('variableNotLang', $attributes['var'], $token);
 
 		if ($type == 'tag-start')
 			$builder->emitCode('ob_start();');
 		elseif ($type == 'tag-end')
-			$builder->emitCode($var . ' ' . ($attributes['increment'] ? '.' : '') . '= ob_get_contents(); ob_end_clean();');
+			$builder->emitCode($var . ' ' . ($attributes['append'] ? '.' : '') . '= ob_get_contents(); ob_end_clean();');
 		else
 		{
 			$value = $builder->parseExpression('normal', $attributes['value'], $token);
 			$this->requireAttributes(array('value'), $attributes, $token);
-			$builder->emitCode($var . ' ' . ($attributes['increment'] ? '.' : '') . '= ' . $value . ';', $token);
+			$builder->emitCode($var . ' ' . ($attributes['append'] ? '.' : '') . '= ' . $value . ';', $token);
 		}
 	}
 
