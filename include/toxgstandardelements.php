@@ -39,24 +39,27 @@ class ToxgStandardElements
 	// Very useful for alternating backgrounds
 	public function tpl_cycle(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
 	{
-		$this->requireAttributes(array('values'), $attributes, $token);
+		$this->requireAttributes(array('values', 'name'), $attributes, $token);
 
-		// Generate random variables for cycle variables
-		$base = md5(isset($attributes['id']) ? $attributes['id'] : rand(100, 100000));
-		$cycle_array = '$cycle_' . $base;
-		$cycle_counter = '$cycle_counter_' . $base;
+		// Not sure if we really even need to pre-build these variables anymore
+		$name = ToxgExpression::makeVarName($attributes['name']);
+
+		if (empty($name))
+			$token->toss('untranslated', 'Invalid cycle name.');
+
+		$cycle_array = '$__toxg_cycle_' . $name;
+		$cycle_counter = '$__toxg_cycle_counter_' . $name;
 
 		$values = explode(',', $attributes['values']);
+
+		if (empty($values))
+			$token->toss('untranslated', 'Cannot cycle through an empty array.');
+
 		foreach ($values as $k => $val)
-			$values[$k] = ToxgExpression::stringWithvars($val, $token);
+			$values[$k] = ToxgExpression::stringWithVars($val, $token);
 
 		// Generate the code
-		$builder->emitCode('if (!isset(' . $cycle_array . ')) {', $token);
-		$builder->emitCode($cycle_array . ' = array(' . implode(',', $values) . '); ' . $cycle_counter . ' = 0;', $token);
-		$builder->emitCode('} else {', $token);
-		$builder->emitCode($cycle_counter . '++; } if (' . $cycle_counter . ' > count(' . $cycle_array . ') - 1) {', $token);
-		$builder->emitCode($cycle_counter . ' = 0;', $token);
-		$builder->emitCode('} echo ' . $cycle_array . '[' . $cycle_counter . '];', $token);
+		$builder->emitCode('if (!isset(' . $cycle_array . ')) {' . $cycle_array . ' = array(' . implode(',', $values) . '); ' . $cycle_counter . ' = 0;} else {' . $cycle_counter . '++; } if (' . $cycle_counter . ' > count(' . $cycle_array . ') - 1) {' . $cycle_counter . ' = 0;} echo ' . $cycle_array . '[' . $cycle_counter . '];', $token);
 	}
 
 	public function tpl_call(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
