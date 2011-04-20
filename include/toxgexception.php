@@ -69,6 +69,7 @@ class ToxgException extends Exception
 		'tpl_output_invalid_as' => 'Invalid value for as attribute: expecting html or raw.',
 		'tpl_json_must_be_empty' => 'Please always use an empty tag like <tpl:json />, it cannot have content inside it.',
 		'tpl_foreach_invalid_from' => 'Cannot foreach over a string, you probably want a variable.',
+		'tpl_set_invalid_meta' => 'Invalid meta data for <tpl:set>. Either a value attribute or content can be used, not both.',
 		'tpl_template_pop_without_push' => 'Please always use a template-push before a template-pop.',
 		'tpl_template_inside_template' => 'Templates cannot contain other templates.  Forget a closing tpl:template?',
 		'tpl_template_inside_alter' => 'Templates must be outside alters, templates, and other elements.',

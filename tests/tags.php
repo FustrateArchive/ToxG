@@ -158,7 +158,7 @@ function test_tags_flush_003($harness)
 
 function test_tags_set_001($harness)
 {
-	$harness->expectFailure(1, 'generic_tpl_must_be_empty');
+	$harness->expectFailure(1, 'generic_tpl_missing_required');
 	$harness->addWrappedData('<tpl:set></tpl:set>');
 }
 
