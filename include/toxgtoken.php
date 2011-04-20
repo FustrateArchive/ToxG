@@ -60,7 +60,7 @@ class ToxgToken
 	public function toss($id_message)
 	{
 		// For error messages, we always really want after the newline, anyway.
-		if ($this->data[0] === "\n")
+		if (!empty($this->data) && $this->data[0] === "\n")
 			$this->line += strspn($this->data, "\n");
 
 		$params = func_get_args();

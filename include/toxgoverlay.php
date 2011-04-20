@@ -174,9 +174,13 @@ class ToxgOverlay
 
 			list ($ns, $name) = explode(':', $match, 2);
 
+			if (empty($ns) || empty($name))
+				$this->parse_alter['token']->toss('generic_tpl_no_ns_or_name');
+
 			$nsuri = $this->parse_alter['token']->getNamespace($ns);
+
 			if ($nsuri === false)
-				$this->toss('tpl_alter_match_unknown_ns', $ns);
+				$this->parse_alter['token']->toss('tpl_alter_match_unknown_ns', $ns);
 
 			// Just store it "fully qualified"...
 			$this->parse_alter['match'][] = $nsuri . ':' . $name;
@@ -211,7 +215,7 @@ class ToxgOverlay
 
 			// Maybe this is dumb, I can't really think of when recursing once will even be okay?
 			if ($this->match_recursion[$fqname] > self::RECURSION_LIMIT)
-				$token->toss('tpl_alter_recurison', $token->prettyName());
+				$token->toss('tpl_alter_recursion', $token->prettyName());
 
 			$this->insertMatchedAlters('before', 'normal', $token, $parser);
 			$this->insertMatchedAlters('beforecontent', 'defer', $token, $parser);

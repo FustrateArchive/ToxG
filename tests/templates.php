@@ -58,7 +58,7 @@ function test_invalid_template_009($harness)
 function test_invalid_template_010($harness)
 {
 	// !!! Maybe this error message is wrong?
-	$harness->expectFailure(1, 'tpl_template_name_without_ns');
+	$harness->expectFailure(1, 'generic_tpl_no_ns_or_name');
 	$harness->addData('<tpl:template name="my:"></tpl:template>');
 }
 

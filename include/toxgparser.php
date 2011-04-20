@@ -285,6 +285,10 @@ class ToxgParser
 
 		// Figure out the namespace and validate it.
 		list ($ns, $name) = explode(':', $token->attributes['name'], 2);
+
+		if (empty($ns) || empty($name))
+			$token->toss('generic_tpl_no_ns_or_name');
+
 		$nsuri = $token->getNamespace($ns);
 		if ($nsuri === false)
 			$token->toss('tpl_template_name_unknown_ns', $ns);

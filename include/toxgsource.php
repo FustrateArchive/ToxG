@@ -365,7 +365,7 @@ class ToxgSource
 				$end_pos = $quote + 1;
 			}
 			else
-				throw new ToxgExceptionFile($this->file, $this->line, 'syntax_tag_buffer_overflow');
+				throw new ToxgExceptionFile($this->file, $this->line, 'syntax_invalid_tag');
 		}
 
 		if ($type === 'tag')

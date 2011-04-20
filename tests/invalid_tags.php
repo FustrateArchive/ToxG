@@ -26,7 +26,7 @@ function test_invalid_source_004($harness)
 
 function test_invalid_source_005($harness)
 {
-	$harness->expectFailure(5, 'syntax_tag_buffer_overflow');
+	$harness->expectFailure(5, 'syntax_invalid_tag');
 	$harness->addData('    ' . "\n\n\n\n" . '<tpl:asdasd');
 }
 
@@ -105,11 +105,13 @@ function test_invalid_source_017($harness)
 
 function test_invalid_source_018($harness)
 {
+	$harness->expectFailure(1, 'expression_invalid_meta');
 	$harness->addData('<tpl:template name="my:asdf"> {} </tpl:template>');
 }
 
 function test_invalid_source_019($harness)
 {
+	$harness->expectFailure(1, 'expression_invalid_meta');
 	$harness->addData('<tpl:template name="my:asdf"> {tpl:} </tpl:template>');
 }
 
@@ -154,13 +156,13 @@ function test_invalid_source_025($harness)
 
 function test_invalid_source_026($harness)
 {
-	$harness->expectFailure(1, 'syntax_tag_buffer_overflow');
+	$harness->expectFailure(1, 'syntax_invalid_tag');
 	$harness->addData('{tpl:template name="my:asdf">{/tpl:template}');
 }
 
 function test_invalid_source_027($harness)
 {
-	$harness->expectFailure(1, 'syntax_tag_buffer_overflow');
+	$harness->expectFailure(1, 'syntax_invalid_tag');
 	$harness->addData('<tpl:template name="my:asdf"}{/tpl:template}');
 }
 
@@ -173,6 +175,7 @@ function test_invalid_source_028($harness)
 
 function test_invalid_source_029($harness)
 {
+	$harness->expectFailure(1, 'expression_invalid_meta');
 	$harness->addWrappedData('var x = {tpl: xyz};');
 }
 

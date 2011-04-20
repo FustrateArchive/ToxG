@@ -60,7 +60,7 @@ function test_invalid_alter_008($harness)
 function test_invalid_alter_009($harness)
 {
 	// !!! Maybe not correct error?
-	$harness->expectFailure(1, 'tpl_alter_match_without_ns');
+	$harness->expectFailure(1, 'generic_tpl_no_ns_or_name');
 	$harness->addDataForOverlay();
 	$harness->addOverlay('<tpl:alter match="my:" position="before">test</tpl:alter>');
 }

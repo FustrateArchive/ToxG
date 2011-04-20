@@ -46,7 +46,6 @@ class ToxgException extends Exception
 		'syntax_attr_value_unterminated' => 'Malformed tag or missing end quote in attribute value.',
 		'syntax_comment_unterminated' => 'Unterminated comment started on line %s.',
 		'syntax_tag_buffer_unmatched_quotes' => 'Unclosed quote or unexpectedly long tag.',
-		'syntax_tag_buffer_overflow' => 'Unclosed or unexpectedly long instruction, try breaking it up.',
 
 		// *** Building errors:
 
@@ -61,6 +60,7 @@ class ToxgException extends Exception
 		'generic_tpl_must_be_empty' => 'All %s must be empty.',
 		'generic_tpl_must_be_not_empty' => 'All %s cannot be empty.',
 		'generic_tpl_missing_required' => 'Missing attribute %s for %s (required: %s.)',
+		'generic_tpl_no_ns_or_name' => 'All template and alter names must have both a namespace and a name.',
 		'generic_tpl_empty_attr' => 'Missing or empty attribute %s for %s.',
 		'tpl_content_must_be_empty' => 'Please always use an empty tag like <tpl:content />, it cannot have content inside it.',
 		'tpl_content_inside_invalid' => 'You cannot use tpl:content within tpl:if, tpl:foreach, etc.  It must be inside a tpl:template.',
@@ -83,7 +83,7 @@ class ToxgException extends Exception
 		'tpl_alter_invalid_position' => 'Unsupported position for tpl:alter.',
 		'tpl_alter_match_without_ns' => 'Every matched element should have a namespace, %s didn\'t have one.',
 		'tpl_alter_match_unknown_ns' => 'You need to declare namespaces even for matched elements (%s was undeclared.)',
-		'tpl_alter_recurison' => 'Potential alter recursion detected on %s.',
+		'tpl_alter_recursion' => 'Potential alter recursion detected on %s.',
 
 		// *** Expression parsing:
 

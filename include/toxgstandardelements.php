@@ -70,6 +70,10 @@ class ToxgStandardElements
 		$this->requireAttributes(array('name'), $attributes, $token);
 
 		list ($ns, $name) = explode(':', $attributes['name']);
+
+		if (empty($ns) || empty($name))
+			$this->toss('generic_tpl_no_ns_or_name');
+
 		$name = ToxgExpression::stringWithVars($name, $token);
 		$nsuri = ToxgExpression::stringWithVars($token->getNamespace($ns), $token);
 		$base = 'ToxgExpression::makeTemplateName(' . $nsuri . ', ' . $name . ')';
