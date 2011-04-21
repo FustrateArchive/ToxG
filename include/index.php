@@ -21,5 +21,6 @@ require(dirname(__FILE__) . '/toxgoverlay.php');
 require(dirname(__FILE__) . '/toxgparser.php');
 require(dirname(__FILE__) . '/toxgtoken.php');
 require(dirname(__FILE__) . '/toxgstandardelements.php');
+require(dirname(__FILE__) . '/toxgtheme.php');
 
 ?>
