@@ -164,13 +164,13 @@ function test_tags_set_001($harness)
 
 function test_tags_set_002($harness)
 {
-	$harness->expectFailure(1, 'generic_tpl_must_be_empty');
+	$harness->expectFailure(1, 'tpl_set_invalid_meta');
 	$harness->addWrappedData('<tpl:set var="{$x}" value="{$y}"></tpl:set>');
 }
 
 function test_tags_set_003($harness)
 {
-	$harness->expectFailure(1, 'generic_tpl_must_be_empty');
+	$harness->expectFailure(1, 'tpl_set_invalid_meta');
 	$harness->addWrappedData('<tpl:set var="{$x}" value="1"></tpl:set>');
 }
 
