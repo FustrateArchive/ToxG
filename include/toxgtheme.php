@@ -147,7 +147,10 @@ class ToxgTheme
 
 		foreach ($this->_overlays as $filename)
 		{
-			$full = $this->template_dir . '/' . $filename . '.' . $this->extension;
+			if (file_exists($filename))
+				$full = $filename;
+			else
+				$full = $this->template_dir . '/' . $filename . '.' . $this->extension;
 
 			$this->mtime = max($this->mtime, filemtime($full));
 			$this->templates->addOverlays(array($full));
