@@ -5,7 +5,7 @@ require(dirname(dirname(__FILE__)) . '/include.php');
 // The default is simply "lang".
 ToxgExpression::setLangFunction('my_lang_formatter');
 
-$theme = new SampleToxgTheme();
+$theme = new SampleToxgTheme(dirname(__FILE__), dirname(__FILE__));
 $theme->loadTemplates('templates');
 $theme->addLayer('main');
 
