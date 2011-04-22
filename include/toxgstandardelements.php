@@ -132,8 +132,6 @@ class ToxgStandardElements
 
 	public function tpl_for(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
 	{
-		$this->requireAttributes(array('init', 'while', 'modify'), $attributes, $token);
-
 		$init = '';
 		$while = '';
 		$modify = '';
@@ -149,7 +147,7 @@ class ToxgStandardElements
 
 		// If there's no parens or $'s in it, it can't be for-able.
 		if (empty($init) && empty($while) && empty($modify))
-			$token->toss('untranslated', 'At least one parameter must be used in a for loop.');
+			$token->toss('tpl_for_no_params');
 
 		if ($type === 'tag-empty')
 			$builder->emitCode('for (' . $init . '; ' . $while . '; ' . $modify . ') {}', $token);
