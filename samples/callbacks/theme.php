@@ -4,20 +4,6 @@ class MyTheme extends SampleToxgTheme
 {
 	protected $nsuri = 'http://www.example.com/#site';
 
-	// Using a singleton pattern just for simplicity, load data however you like.
-	protected static $instance = null;
-
-	public function __construct()
-	{
-		self::$instance = $this;
-		parent::__construct();
-	}
-
-	public static function getInstance()
-	{
-		return self::$instance;
-	}
-
 	protected function compileAll()
 	{
 		$this->setListeners();
@@ -36,7 +22,7 @@ class MyTheme extends SampleToxgTheme
 		$nsuri = $token->getNamespace($ns);
 
 		if ($nsuri == $this->nsuri && $name === 'dynamic')
-			$builder->emitCode('$dynamic = ' . __CLASS__ . '::getInstance()->loadDynamic();', $token);
+			$builder->emitCode('$dynamic = $theme->loadDynamic();', $token);
 	}
 
 	public function loadDynamic()
