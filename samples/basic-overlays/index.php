@@ -4,7 +4,7 @@ $time_st = microtime(true);
 
 require(dirname(dirname(__FILE__)) . '/include.php');
 
-$theme = new SampleToxgTheme();
+$theme = new SampleToxgTheme(dirname(__FILE__), dirname(__FILE__));
 $theme->loadOverlay('overlay');
 $theme->loadTemplates('templates');
 $theme->addLayer('main');
