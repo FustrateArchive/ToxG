@@ -3,7 +3,6 @@
 class MyTheme extends SampleToxgTheme
 {
 	protected $nsuri = 'http://www.example.com/#site';
-	protected $needs_compile = true;
 
 	public function output()
 	{

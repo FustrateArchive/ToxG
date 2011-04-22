@@ -3,23 +3,30 @@
 class MyTheme extends SampleToxgTheme
 {
 	protected $nsuri = 'http://www.example.com/#site';
-
 	protected $last_foreach_stack = array();
 
-	protected function compileAll()
+	public function output()
 	{
 		$this->setListeners();
-		return parent::compileAll();
+		return parent::output();
 	}
 
 	protected function setListeners()
 	{
-		// Just as an example, let's add a tpl:not-last within tpl:foreach.
+		// When compiling, ask TOX-G to tell us when it sees templates...
 		$this->templates->listenEmitBasic('foreach', array($this, 'tpl_foreach'));
 		$this->templates->listenEmitBasic('not-last', array($this, 'tpl_not_last'));
 	}
 
-	// This is used to provide a unique code for each foreach.
+	public function hookDynamic(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
+	{
+		list ($ns, $name) = explode(':', $attributes['name'], 2);
+		$nsuri = $token->getNamespace($ns);
+
+		if ($nsuri == $this->nsuri && $name === 'dynamic')
+			$builder->emitCode('global $theme; $dynamic = $theme->loadDynamic();', $token);
+	}
+
 	private function getUniqueKey()
 	{
 		return sha1(microtime(true) . rand());
@@ -99,4 +106,4 @@ class MyTheme extends SampleToxgTheme
 	}
 }
 
-?>
+?>
