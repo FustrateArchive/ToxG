@@ -10,10 +10,10 @@ class MyTheme extends SampleToxgTheme
 		$this->lang_debugging = true;
 	}
 
-	protected function compileAll()
+	protected function output()
 	{
 		$this->setListeners();
-		return parent::compileAll();
+		return parent::output();
 	}
 
 	protected function setListeners()
