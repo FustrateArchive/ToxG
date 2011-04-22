@@ -57,20 +57,19 @@ function test_tags_raw_004($harness)
 
 function test_tags_for_001($harness)
 {
-	$harness->expectFailure(1, 'tpl_for_no_params');
 	$harness->addWrappedData('<tpl:for init="true" />');
 }
 
 function test_tags_for_002($harness)
 {
-	$harness->expectFailure(1, 'tpl_for_no_params');
+	$harness->expectFailure(1, 'expression_invalid_meta');
 	$harness->addWrappedData('<tpl:for while="mary has a little lamb" />');
 }
 
 function test_tags_for_003($harness)
 {
 	$harness->expectFailure(1, 'tpl_for_no_params');
-	$harness->addWrappedData('<tpl:for modify="false" />');
+	$harness->addWrappedData('<tpl:for></tpl:for>');
 }
 
 function test_tags_foreach_001($harness)
