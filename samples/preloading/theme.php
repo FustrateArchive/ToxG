@@ -2,7 +2,7 @@
 
 class MyTheme extends SampleToxgTheme
 {
-	protected function output()
+	public function output()
 	{
 		$this->setListeners();
 		return parent::output();
