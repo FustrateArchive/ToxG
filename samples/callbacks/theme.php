@@ -20,7 +20,7 @@ class MyTheme extends SampleToxgTheme
 	{
 		list ($ns, $name) = explode(':', $attributes['name'], 2);
 		$nsuri = $token->getNamespace($ns);
-
+$builder->emitCode("\n###" . $attributes['name'] . "\n");
 		if ($nsuri == $this->nsuri && $name === 'dynamic')
 			$builder->emitCode('$dynamic = $theme->loadDynamic();', $token);
 	}
