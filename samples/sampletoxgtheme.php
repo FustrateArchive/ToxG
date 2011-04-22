@@ -14,7 +14,7 @@ class SampleToxgTheme extends ToxgTheme
 
 	public function output()
 	{
-		$this->addCommonVars('context');
+		$this->setTemplateParam('context', $this->context);
 		parent::output();
 	}
 }
