@@ -2,26 +2,10 @@
 
 class MyTheme extends SampleToxgTheme
 {
-	protected $nsuri = 'http://www.example.com/#site';
-
-	// Using a singleton pattern just for simplicity, load data however you like.
-	protected static $instance = null;
-
-	public function __construct()
-	{
-		self::$instance = $this;
-		parent::__construct();
-	}
-
-	public static function getInstance()
-	{
-		return self::$instance;
-	}
-
-	protected function compileAll()
+	protected function output()
 	{
 		$this->setListeners();
-		return parent::compileAll();
+		return parent::output();
 	}
 
 	protected function setListeners()
@@ -36,7 +20,7 @@ class MyTheme extends SampleToxgTheme
 		// Inside there, we'll load the data smartly based on what's needed.
 		if ($type === 'tag-start')
 		{
-			$builder->emitCode('$dynamic = ' . __CLASS__ . '::getInstance()->loadDynamic();', $token);
+			$builder->emitCode('global $theme; $dynamic = $theme->loadDynamic();', $token);
 			// And for illustration:
 			$builder->emitCode('echo \'<em>Loaded:</em><pre>\', htmlspecialchars(print_r($dynamic, true)), \'</pre>\';', $token);
 		}

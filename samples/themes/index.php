@@ -18,7 +18,9 @@ if (session_theme_var() === null)
 	session_theme_var('base');
 
 $theme = new MyTheme(session_theme_var());
-$theme->loadTemplates('index', 'basic', 'pages');
+$theme->loadTemplates('index');
+$theme->loadTemplates('basic');
+$theme->loadTemplates('pages');
 $theme->addLayer('html');
 
 if (isset($_GET['page']) && in_array($_GET['page'], array('about', 'history')))
