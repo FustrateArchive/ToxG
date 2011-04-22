@@ -5,7 +5,7 @@ $time_st = microtime(true);
 require(dirname(dirname(__FILE__)) . '/include.php');
 
 $theme = new SampleToxgTheme(dirname(__FILE__), dirname(__FILE__));
-$theme->loadTemplates(dirname(__FILE__) . '/templates.tox');
+$theme->loadTemplates('templates');
 $theme->addLayer('main');
 
 $theme->addTemplate('home');
