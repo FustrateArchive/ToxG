@@ -9,7 +9,7 @@ if (isset($_GET['theme']) && in_array($_GET['theme'], array('base', 'red', 'blue
 {
 	session_theme_var($_GET['theme']);
 
-	$uri = preg_replace(array('~()&theme=[^&]+~', '~(\?)theme=[^&]+&~'), '$1', $_SERVER['REQUEST_URI']);
+	$uri = preg_replace('~&?\??theme=([a-z]+)~', '', $_SERVER['REQUEST_URI']);
 	header('Location: ' . $uri, true, 302);
 	exit;
 }
@@ -39,6 +39,7 @@ function session_theme_var($value = null)
 
 	if ($value !== null)
 		$var = $value;
+
 	return $var;
 }
 
