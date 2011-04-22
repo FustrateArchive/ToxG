@@ -10,7 +10,7 @@ class MyTheme extends SampleToxgTheme
 		$this->lang_debugging = true;
 	}
 
-	protected function output()
+	public function output()
 	{
 		$this->setListeners();
 		return parent::output();
