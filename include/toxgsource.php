@@ -244,6 +244,7 @@ class ToxgSource
 
 		// Namespaced elements are handled a bit differently... and by a bit, I mean really.
 		$ns_mark = $this->firstPosOf(':', 1);
+
 		if ($ns_mark !== false)
 		{
 			$ns = substr($this->data_buffer, $this->data_pos + 1, $ns_mark - $this->data_pos - 1);
@@ -255,13 +256,19 @@ class ToxgSource
 			// Okay, then, the namespace was found invalid so just treat it as content.
 			if (!self::validNCName($ns))
 			{
-				// !!! Determine if we're in an HTML tag, so we can allow hooks. Should be done in a cleaner way.
-				if (trim($ns[0], "a..zA..Z") === '')
-					return $this->readGenericTag('html-tag', '<', '>', 1);
-				else
-					// We really are looking at a bunch of junk
-					return $this->readContent(1);
+				// Determine if we're in an HTML tag, so we can allow hooks. Should be done in a cleaner way.
+				$ns = false
 			}
+		}
+		else
+			$ns = false;
+
+		if ($ns === false)
+		{
+			if (trim($ns[0], "a..zA..Z") === '')
+				return $this->readGenericTag('html-tag', '<', '>', 1);
+
+			return $this->readContent(1);
 		}
 
 		return $this->readGenericTag('tag', '<', '>', 1 + strlen($ns) + 1);

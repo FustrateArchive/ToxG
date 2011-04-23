@@ -129,7 +129,7 @@ class ToxgToken
 			$this->toss('syntax_name_unterminated');
 
 		$ns_mark = $this->firstPosOf(':');
-		if ($ns_mark !== false && $ns_mark < $after_name)
+		if ($ns_mark !== false && $ns_mark < $after_name && !in_array($this->type, 'html-tag-start', 'html-tag-empty', 'html-tag-end'))
 		{
 			$ns = $this->eatUntil($ns_mark);
 			// Skip the : after the namespace.

@@ -45,7 +45,7 @@ function test_invalid_template_007($harness)
 
 function test_invalid_template_008($harness)
 {
-	$harness->expectFailure(1, 'parsing_content_outside_template');
+	$harness->expectFailure(1, 'builder_element_outside_template');
 	$harness->addData('<undef:asdf />');
 }
 
