@@ -47,9 +47,9 @@ class ToxgTheme
 		$this->template_params[$key] = $value;
 	}
 
-	public function listenEmit($nsuri, $name, $callback)
+	public function listenEmit($nsuri, $name, $callback, $side = 'after')
 	{
-		return $this->templates->listenEmit($nsuri, $name, $callback);
+		return $this->templates->listenEmit($nsuri, $name, $callback, $side);
 	}
 
 	public function callOverlays(array $name, array $ns)

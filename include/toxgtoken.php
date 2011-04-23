@@ -86,7 +86,7 @@ class ToxgToken
 		$this->setNamespace();
 
 		// A start tag will be 1 from end, empty tag 2 from end (/>)...
-		$end_offset = $this->type == 'tag-start' ? 1 : 2;
+		$end_offset = ($this->type == 'tag-start' || $this->type == 'html-tag-start') ? 1 : 2;
 
 		if ($this->data_pos < strlen($this->data) - $end_offset)
 			$this->toss('syntax_invalid_tag');

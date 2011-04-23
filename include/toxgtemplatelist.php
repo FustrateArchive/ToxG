@@ -46,17 +46,17 @@ class ToxgTemplateList
 		$this->debugging = !$disable;
 	}
 
-	public function listenEmit($nsuri, $name, $callback)
+	public function listenEmit($nsuri, $name, $callback, $side)
 	{
 		if ($this->builder === null)
 			$this->builder = new ToxgBuilder();
 
-		$this->builder->listenEmit($nsuri, $name, $callback);
+		$this->builder->listenEmit($nsuri, $name, $callback, $side);
 	}
 
-	public function listenEmitBasic($name, $callback)
+	public function listenEmitBasic($name, $callback, $side)
 	{
-		return $this->listenEmit(ToxgTemplate::TPL_NAMESPACE, $name, $callback);
+		return $this->listenEmit(ToxgTemplate::TPL_NAMESPACE, $name, $callback, $side);
 	}
 
 	public function addTemplate($source_file, $cache_file, array $inherited_files = array())

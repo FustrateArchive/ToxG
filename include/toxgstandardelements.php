@@ -33,7 +33,7 @@ class ToxgStandardElements
 		);
 
 		foreach ($tags as $tag)
-			$template->listenEmitBasic($tag, array($inst, 'tpl_' . str_replace('-', '_', $tag)));
+			$template->listenEmitBasic($tag, array($inst, 'tpl_' . str_replace('-', '_', $tag)), 'after');
 	}
 
 	// Very useful for alternating backgrounds
