@@ -225,9 +225,6 @@ class ToxgSource
 		if ($next_pos === false)
 			$next_pos = strlen($this->data_buffer);
 
-		if ($offest > 0)
-			die(substr($this->data_buffer, 0, $next_pos - $this->data_pos));
-
 		return $this->makeToken('content', $next_pos - $this->data_pos);
 	}
 
