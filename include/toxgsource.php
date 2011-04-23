@@ -257,7 +257,7 @@ class ToxgSource
 			if (!self::validNCName($ns))
 			{
 				// Determine if we're in an HTML tag, so we can allow hooks. Should be done in a cleaner way.
-				$ns = false
+				$ns = false;
 			}
 		}
 		else
