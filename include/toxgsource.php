@@ -255,10 +255,7 @@ class ToxgSource
 
 			// Okay, then, the namespace was found invalid so just treat it as content.
 			if (!self::validNCName($ns))
-			{
-				// Determine if we're in an HTML tag, so we can allow hooks. Should be done in a cleaner way.
 				$ns = false;
-			}
 		}
 		else
 			$ns = false;
