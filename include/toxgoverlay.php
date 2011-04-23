@@ -67,7 +67,6 @@ class ToxgOverlay
 			$this->parseInAlter($token);
 			break;
 
-
 		default:
 			$token->toss('parsing_internal_error');
 		}
@@ -187,7 +186,7 @@ class ToxgOverlay
 				if ($name == 'class')
 					$match_attrs['class'][] = $value;
 				else
-					$match_attrs[$name] = $value;
+					$match_attrs[$name] = $value === null ? true : $value;
 			}
 
 			$this->parse_alter['html'] = array(
@@ -352,13 +351,13 @@ class ToxgOverlay
 						if (!isset($token->attributes['class']))
 							continue;
 						$classes = explode(' ', $token->attributes['class']);
-						foreach ($value as $val)
-							if (!in_array($val, $classes))
-								$failed = true;
+
+						if (count(array_intersect($classes, $value)) < count($value))
+							$failed = true;
 					}
 					else
 					{
-						if (!isset($token->attributes[$name]) || $token->attributes[$name] != $value)
+						if (!isset($token->attributes[$name]) || ($value !== true && $token->attributes[$name] != $value))
 							$failed = true;
 					}
 				}
