@@ -113,6 +113,10 @@ class ToxgBuilder
 	public function parsedContent(ToxgToken $token, ToxgParser $parser)
 	{
 		$this->emitOutputString($token->data, $token);
+
+		// Content... with listeners!
+		if (in_array($token->type, array('html-tag-start', 'html-tag-empty', 'html-tag-end')))
+			$this->fireEmit($token);
 	}
 
 	public function parsedElement(ToxgToken $token, ToxgParser $parser)

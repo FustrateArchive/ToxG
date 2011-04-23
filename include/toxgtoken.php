@@ -34,11 +34,14 @@ class ToxgToken
 		switch ($this->type)
 		{
 		case 'tag-end':
+		case 'html-tag-end':
 			$this->parseEnd();
 			break;
 
 		case 'tag-start':
+		case 'html-tag-start':
 		case 'tag-empty':
+		case 'html-tag-empty':
 			$this->parseStart();
 			break;
 
@@ -116,10 +119,6 @@ class ToxgToken
 	{
 		if ($this->ns !== '')
 			$this->nsuri = $this->source->getNamespace($this->ns);
-
-		// If we don't have a namespace, this is XHTML.
-		if ($this->nsuri === false)
-			$this->type = 'content';
 	}
 
 	protected function parseName()

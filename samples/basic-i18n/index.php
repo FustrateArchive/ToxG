@@ -5,9 +5,11 @@ require(dirname(dirname(__FILE__)) . '/include.php');
 // The default is simply "lang".
 ToxgExpression::setLangFunction('my_lang_formatter');
 
-$theme = new SampleToxgTheme(dirname(__FILE__), dirname(__FILE__));
+$theme = new SampleToxgTheme(dirname(__FILE__), dirname(__FILE__), array(), true);
 $theme->loadTemplates('templates');
 $theme->addLayer('main');
+
+$theme->listenEmit('', 'title', 'add_title_prefix');
 
 $theme->addTemplate('home');
 $theme->context['page_name'] = my_lang_formatter('page_name_home');
@@ -32,6 +34,12 @@ function my_lang_formatter()
 		$string = $strings[$id];
 
 	return vsprintf($string, $args);
+}
+
+function add_title_prefix(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
+{
+	if ($type === 'html-tag-start')
+		$builder->emitOutputString('Hey! ', $token);
 }
 
 ?>
