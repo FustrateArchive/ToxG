@@ -14,7 +14,7 @@ function test_invalid_source_002($harness)
 
 function test_invalid_source_003($harness)
 {
-	$harness->expectFailure(5, 'parsing_content_outside_template');
+	$harness->expectFailure(5, 'syntax_invalid_tag');
 	$harness->addData('    ' . "\n\n\n\n" . '<t');
 }
 
@@ -44,7 +44,7 @@ function test_invalid_source_007($harness)
 
 function test_invalid_source_008($harness)
 {
-	$harness->expectFailure(1, 'parsing_content_outside_template');
+	$harness->expectFailure(1, 'syntax_invalid_tag');
 	$harness->addData('</');
 }
 

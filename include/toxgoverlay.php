@@ -144,7 +144,7 @@ class ToxgOverlay
 		$this->parse_alter['file'] = $token->file;
 		$this->parse_alter['line'] = $token->line;
 		$this->parse_alter['data'] = array();
-		$this->parse_alter['match'] = !empty($token->attributes['match']) ? $token->attributes['match'] : array();
+		$this->parse_alter['match'] = !empty($token->attributes['match']) ? $token->attributes['match'] : '';
 		$this->parse_alter['html'] = !empty($token->attributes['html']) ? $token->attributes['html'] : '';
 		$this->parse_alter['name'] = isset($token->attributes['name']) ? $token->attributes['name'] : false;
 		if ($this->parse_alter['name'] !== false)

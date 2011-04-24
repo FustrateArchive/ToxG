@@ -234,6 +234,9 @@ class ToxgSource
 		if ($this->firstPosOf('<![CDATA[') === $this->data_pos)
 			return $this->makeToken('cdata-start', strlen('<![CDATA['));
 
+		if ($this->firstPosOf('<!DOCTYPE') === $this->data_pos)
+			return $this->readContent(1);
+
 		// Comments can comment out commands, which won't get processed.
 		if ($this->firstPosOf('<!---') === $this->data_pos)
 		{

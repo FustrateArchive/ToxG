@@ -46,7 +46,7 @@ class ToxgTemplateList
 		$this->debugging = !$disable;
 	}
 
-	public function listenEmit($nsuri, $name, $callback, $side)
+	public function listenEmit($nsuri, $name, $callback, $side = 'after')
 	{
 		if ($this->builder === null)
 			$this->builder = new ToxgBuilder();
@@ -54,7 +54,7 @@ class ToxgTemplateList
 		$this->builder->listenEmit($nsuri, $name, $callback, $side);
 	}
 
-	public function listenEmitBasic($name, $callback, $side)
+	public function listenEmitBasic($name, $callback, $side = 'after')
 	{
 		return $this->listenEmit(ToxgTemplate::TPL_NAMESPACE, $name, $callback, $side);
 	}
