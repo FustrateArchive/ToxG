@@ -314,9 +314,11 @@ class ToxgParser
 
 		$close_token = array_pop($this->tree);
 
-		// Darn, it's not the same one.
-		if ($close_token->name !== $token->name)
-			$token->toss('parsing_tag_end_unmatched', $token->prettyName(), $close_token->prettyName(), $close_token->file, $close_token->line);
+		// If it's the same one, give it the same attributes
+		if ($close_token->name === $token->name)
+			$token->attributes = $close_token->attributes;
+		else
+			array_push($this->tree, $close_token);
 
 		// This makes it easier, since they're on the same element after all.
 		$token->attributes = $close_token->attributes;
