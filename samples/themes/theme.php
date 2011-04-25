@@ -12,9 +12,9 @@ class MyTheme extends SampleToxgTheme
 		$this->compile_dir = dirname(__FILE__) . '/';
 		$this->inherited_dirs[] = dirname(__FILE__) . '/themes/base';
 
-		parent::__construct($this->template_dir, $this->compile_dir, $this->inherited_dirs);
+		parent::__construct($this->template_dir, $this->compile_dir);
 
-		if (file_exists($this->template_dir . '/overlay.tpl'))
+		if (file_exists($this->template_dir . '/overlay.tox'))
 			$this->loadOverlay('overlay');
 	}
 
