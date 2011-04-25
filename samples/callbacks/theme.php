@@ -13,7 +13,7 @@ class MyTheme extends SampleToxgTheme
 	protected function setListeners()
 	{
 		// When compiling, ask TOX-G to tell us when it sees templates...
-		$this->templates->listenEmitBasic('template', array($this, 'hookDynamic'), 'after');
+		$this->templates->listenEmitBasic('template', array($this, 'hookDynamic'));
 	}
 
 	public function hookDynamic(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)

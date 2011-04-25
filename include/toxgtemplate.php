@@ -55,14 +55,14 @@ class ToxgTemplate
 		$this->debugging = !$disable;
 	}
 
-	public function listenEmit($nsuri, $name, $callback, $side)
+	public function listenEmit($nsuri, $name, $callback)
 	{
-		$this->builder->listenEmit($nsuri, $name, $callback, $side);
+		$this->builder->listenEmit($nsuri, $name, $callback);
 	}
 
-	public function listenEmitBasic($name, $callback, $side)
+	public function listenEmitBasic($name, $callback)
 	{
-		return $this->listenEmit(self::TPL_NAMESPACE, $name, $callback, $side);
+		return $this->listenEmit(self::TPL_NAMESPACE, $name, $callback);
 	}
 
 	public function setPrebuilder($prebuilder)
