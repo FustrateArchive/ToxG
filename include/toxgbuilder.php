@@ -221,9 +221,6 @@ class ToxgBuilder
 		else
 			$inherit = array();
 
-		if (!empty($inherit))
-			die(print_r($inherit));
-
 		$args_escaped = array();
 		$arg_names = array_merge($inherit, $this->common_vars);
 
