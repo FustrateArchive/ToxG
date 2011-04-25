@@ -152,7 +152,7 @@ class ToxgTheme
 				$this->needs_compile = !file_exists($compiled) || filemtime($compiled) <= $this->mtime;
 			}
 
-			$this->templates->addTemplate($source, $compiled, $inherited);
+			$this->templates->addTemplate($source, $compiled, array());
 		}
 
 		foreach ($this->_overlays as $filename)
