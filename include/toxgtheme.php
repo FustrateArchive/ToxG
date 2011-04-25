@@ -114,30 +114,40 @@ class ToxgTheme
 
 		foreach ($this->_templates as $filename)
 		{
+			$source = null;
+
 			// Did they give us the full path to a file? This way, we support both a common template directory and modular template directories.
 			if (file_exists($filename))
 			{
 				$source = $filename;
 				$compiled = $this->compile_dir . '/.toxg.' . preg_replace('~[^a-zA-Z0-9_-]~', '_', $filename) . '.' . $overlay_hash . '.php';
 			}
-			else
+			else if (file_exists($this->template_dir . '/' . $filename . '.' . $this->extension))
 			{
 				$source = $this->template_dir . '/' . $filename . '.' . $this->extension;
 				$compiled = $this->compile_dir . '/.toxg.' . $filename . '.' . $overlay_hash . '.php';
 			}
+			else
+			{
+				// Look for it in the inherited dirs
+				foreach ($this->inherited_dirs as $dir)
+					if (file_exists($dir . '/' . $filename . '.' . $this->extension))
+					{
+						$source = $dir . '/' . $filename . '.' . $this->extension;
+						$compiled = $this->compile_dir . '/.toxg.' . $filename . '.' . $overlay_hash . '.php';
+						break;
+					}
+			}
 
-			$inherited = array();
-			foreach ($this->inherited_dirs as $dir)
-				$inherited[] = $dir . '/' . $filename . '.' . $this->extension;
+			// Error out if $full is null (hey, that rhymes!)
+			if ($source === null)
+				throw new ToxgException('parsing_cannot_open');
 
 			// Note: if overlays change, this won't work unless the overlay was touched.
 			// Normally, you'd flush the system when it needs a recompile.
 			if ($this->mtime_check && !$this->needs_compile)
 			{
 				$this->mtime = max($this->mtime, filemtime($source));
-
-				foreach ($inherited as $file)
-					$this->mtime = max($this->mtime, filemtime($file));
 
 				$this->needs_compile = !file_exists($compiled) || filemtime($compiled) <= $this->mtime;
 			}
@@ -147,10 +157,26 @@ class ToxgTheme
 
 		foreach ($this->_overlays as $filename)
 		{
+			$full = null;
+
 			if (file_exists($filename))
 				$full = $filename;
-			else
+			else if (file_exists($this->template_dir . '/' . $filename . '.' . $this->extension))
 				$full = $this->template_dir . '/' . $filename . '.' . $this->extension;
+			else
+			{
+				// Look for it in the inherited dirs
+				foreach ($this->inherited_dirs as $dir)
+					if (file_exists($dir . '/' . $filename . '.' . $this->extension))
+					{
+						$full = $dir . '/' . $filename . '.' . $this->extension;
+						break;
+					}
+			}
+
+			// Error out if $full is null (hey, that rhymes!)
+			if ($full === null)
+				throw new ToxgException('parsing_cannot_open');
 
 			$this->mtime = max($this->mtime, filemtime($full));
 			$this->templates->addOverlays(array($full));

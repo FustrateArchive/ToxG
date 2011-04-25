@@ -216,10 +216,13 @@ class ToxgBuilder
 		$template = $this->prebuilder->getTemplateForCall($token);
 		$name = addcslashes($template['name'], '\\\'');
 
-		if (isset($token->attributes[ToxgTemplate::TPL_NAMESPACE . ':inherit']))
-			$inherit = preg_split('~[ \t\r\n]+~', $token->attributes[ToxgTemplate::TPL_NAMESPACE . ':inherit']);
+		if (isset($token->attributes['tpl:inherit']))
+			$inherit = preg_split('~[ \t\r\n]+~', $token->attributes['tpl:inherit']);
 		else
 			$inherit = array();
+
+		if (!empty($inherit))
+			die(print_r($inherit));
 
 		$args_escaped = array();
 		$arg_names = array_merge($inherit, $this->common_vars);
@@ -235,7 +238,7 @@ class ToxgBuilder
 		foreach ($token->attributes as $k => $v)
 		{
 			// Don't send this one.
-			if ($k === ToxgTemplate::TPL_NAMESPACE . ':inherit')
+			if ($k === 'tpl:inherit')
 				continue;
 
 			$arg_names[] = ToxgExpression::makeVarName($k);

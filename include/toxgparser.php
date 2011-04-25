@@ -317,7 +317,7 @@ class ToxgParser
 			$template_attributes['name'] .= '--toxg-direct';
 
 			$call_attributes = array(
-				ToxgTemplate::TPL_NAMESPACE . ':inherit' => '*',
+				'tpl:inherit' => '*',
 			);
 
 			$tokens = array(
@@ -346,7 +346,7 @@ class ToxgParser
 		if (empty($token->attributes))
 			return;
 		// No reason if we're using tpl:inherit="*".
-		if (count($token->attributes) === 1 && isset($token->attributes[ToxgTemplate::TPL_NAMESPACE . ':inherit']) && $token->attributes[ToxgTemplate::TPL_NAMESPACE . ':inherit'] === '*')
+		if (count($token->attributes) === 1 && isset($token->attributes['tpl:inherit']) && $token->attributes['tpl:inherit'] === '*')
 			return;
 
 		// Overlays and content should be able to reference the attributes in the call.
