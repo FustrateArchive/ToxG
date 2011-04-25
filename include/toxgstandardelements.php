@@ -320,10 +320,7 @@ class ToxgStandardElements
 				$args_escaped[] = $k . ' => ' . $builder->parseExpression('stringWithVars', $v, $token);
 			}
 
-			if (!empty($inherit))
-				$builder->emitCode('$__toxg_args = array(' . implode(', ', $args_escaped) . ') + array_intersect_key($__toxg_params, array_flip(' . var_export($inherit, true) . '));', $token);
-			else
-				$builder->emitCode('$__toxg_args = array(' . implode(', ', $args_escaped) . ') + $__toxg_params;', $token);
+			$builder->emitCode('$__toxg_args = array(' . implode(', ', $args_escaped) . ') + $__toxg_params;', $token);
 
 			$builder->emitOutputString('<', $token);
 			$builder->emitOutputParam($name, $token);

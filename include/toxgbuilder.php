@@ -266,10 +266,7 @@ class ToxgBuilder
 		{
 			$this->emitCode('global $__toxg_argstack; if (!isset($__toxg_argstack)) $__toxg_argstack = array();', $token);
 
-			if (!empty($args_inherit))
-				$this->emitCode('$__toxg_args = array(' . implode(', ', $args_escaped) . ') + array_intersect_key($__toxg_params, array_flip(' . var_export($args_inherit, true) . '));', $token);
-			else
-				$this->emitCode('$__toxg_args = array(' . implode(', ', $args_escaped) . ') + $__toxg_params;', $token);
+			$this->emitCode('$__toxg_args = array(' . implode(', ', $args_escaped) . ') + $__toxg_params;', $token);
 
 			$this->emitCode('$__toxg_argstack[] = &$__toxg_args;', $token);
 		}
