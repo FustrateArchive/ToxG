@@ -10,7 +10,7 @@ class MyTheme extends SampleToxgTheme
 		$this->theme = $name;
 		$this->template_dir = dirname(__FILE__) . '/themes/' . $name;
 		$this->compile_dir = dirname(__FILE__) . '/';
-		$this->inherited_dirs[] = dirname(__FILE__) . '/themes/base';
+		$this->inherited_dirs[] = $name === 'base' ? array() : (dirname(__FILE__) . '/themes/base');
 
 		parent::__construct($this->template_dir, $this->compile_dir, $this->inherited_dirs);
 
