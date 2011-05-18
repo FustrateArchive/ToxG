@@ -52,6 +52,11 @@ class ToxgTheme
 		return $this->templates->listenEmit($nsuri, $name, $callback);
 	}
 
+	public function listenEmitBasic($name, $callback)
+	{
+		return $this->templates->listenEmitBasic($name, $callback);
+	}
+
 	public function callOverlays(array $name, array $ns)
 	{
 		$this->overlayCalls[] = is_array($name) ? implode('', $name) : $name . (is_array($ns) ? implode('', $ns) : $ns);
