@@ -40,7 +40,6 @@ class ToxgOverlay
 	public function setupParser(ToxgParser $parser)
 	{
 		$parser->listen('parsedElement', array($this, 'parsedElement'));
-		$parser->listen('parsedContent', array($this, 'parsedContent'));
 	}
 
 	public function parse()
@@ -66,7 +65,6 @@ class ToxgOverlay
 		case 'alter':
 			$this->parseInAlter($token);
 			break;
-
 
 		default:
 			$token->toss('parsing_internal_error');
@@ -133,7 +131,7 @@ class ToxgOverlay
 
 	protected function setupAlter(ToxgToken $token)
 	{
-		if (!isset($token->attributes['position']) || (!isset($token->attributes['match']) && !isset($token->attributes['html'])))
+		if (!isset($token->attributes['match'], $token->attributes['position']))
 			$token->toss('tpl_alter_missing_match_position');
 		if (!isset($this->alters[$token->attributes['position']]))
 			$token->toss('tpl_alter_invalid_position');
@@ -145,8 +143,7 @@ class ToxgOverlay
 		$this->parse_alter['file'] = $token->file;
 		$this->parse_alter['line'] = $token->line;
 		$this->parse_alter['data'] = array();
-		$this->parse_alter['match'] = !empty($token->attributes['match']) ? $token->attributes['match'] : array();
-		$this->parse_alter['html'] = $token->attributes['html'];
+		$this->parse_alter['match'] = $token->attributes['match'];
 		$this->parse_alter['name'] = isset($token->attributes['name']) ? $token->attributes['name'] : false;
 		if ($this->parse_alter['name'] !== false)
 		{
@@ -167,45 +164,9 @@ class ToxgOverlay
 			return true;
 		}
 
-		$this->parse_alter['source'] = new ToxgSource($this->parse_alter['data'], $this->parse_alter['file'], $this->parse_alter['line']);
-		if ($this->source !== null)
-			$this->parse_alter['source']->copyNamespaces($this->source);
-
-		if (isset($this->parse_alter['html']))
-		{
-			$this->parse_alter['match'] = $this->parsed_alter['html'] = array();
-
-			preg_match_all('/([a-z0-9]+)?\[([^\]]*)\]/i', $this->parse_alter['html'], $matches);
-
-			$match_attrs = array('class' => array());
-			foreach ($matches[2] as $k => $v)
-			{
-				if (empty($v))
-					continue;
-
-				list($name, $value) = explode('=', $v);
-				if ($name == 'class')
-					$match_attrs['class'][] = $value;
-				else
-					$match_attrs[$name] = $value;
-			}
-
-			$this->parse_alter['html'] = array(
-				'element' => $matches[1][0],
-				'attributes' => $match_attrs,
-			);
-
-			if (empty($this->parse_alter['html']['attributes']['class']))
-				unset($this->parse_alter['html']['attributes']['class']);
-			if (empty($this->parse_alter['html']['element']) && empty($this->parse_alter['html']['attributes']))
-				$this->parse_alter['token']->toss('tpl_alter_html_without_anything');
-
-			return true;
-		}
-
 		// Load the matches now, we don't do it previously anymore because an alter not called may not have any alters
 		$matches = preg_split('~[ \t\r\n]+~', $this->parse_alter['match']);
-		$this->parse_alter['match'] = $this->parsed_alter['html'] = array();
+		$this->parse_alter['match'] = array();
 		foreach ($matches as $match)
 		{
 			if (strpos($match, ':') === false)
@@ -224,13 +185,14 @@ class ToxgOverlay
 			// Just store it "fully qualified"...
 			$this->parse_alter['match'][] = $nsuri . ':' . $name;
 		}
+
+		$this->parse_alter['source'] = new ToxgSource($this->parse_alter['data'], $this->parse_alter['file'], $this->parse_alter['line']);
+		if ($this->source !== null)
+			$this->parse_alter['source']->copyNamespaces($this->source);
 	}
 
 	public function parsedElement(ToxgToken $token, ToxgParser $parser)
 	{
-		if (!empty($this->parsed_alter['html']))
-			return true;
-
 		// This is where we hook into the parser.  It's sorta complicated, because of positions.
 		// When you use a template or something, we modify its usage inline.
 		// For "before": BEFORE template start/empty tag.
@@ -281,37 +243,6 @@ class ToxgOverlay
 		}
 	}
 
-	public function parsedContent(ToxgToken $token, ToxgParser $parser)
-	{
-		if (!empty($this->parsed_alter['match']))
-			return true;
-
-		// This is where we hook into the parser.  It's sorta complicated, because of positions.
-		// When you use a template or something, we modify its usage inline.
-		// For "before": BEFORE template start/empty tag.
-		// For "beforecontent": AFTER template start tag, or BEFORE template empty tag.
-		// For "aftercontent": BEFORE template end tag, or AFTER template empty tag.
-		// For "after": AFTER template end tag.
-
-		if ($token->type === 'html-tag-start')
-		{
-			$this->insertMatchedHTML('before', 'normal', $token, $parser);
-			$this->insertMatchedHTML('beforecontent', 'defer', $token, $parser);
-		}
-		elseif ($token->type === 'html-tag-end')
-		{
-			$this->insertMatchedHTML('aftercontent', 'normal', $token, $parser);
-			$this->insertMatchedHTML('after', 'defer', $token, $parser);
-		}
-		elseif ($token->type === 'html-tag-empty')
-		{
-			$this->insertMatchedHTML('before', 'normal', $token, $parser);
-			$this->insertMatchedHTML('beforecontent', 'normal', $token, $parser);
-			$this->insertMatchedHTML('aftercontent', 'defer', $token, $parser);
-			$this->insertMatchedHTML('after', 'defer', $token, $parser);
-		}
-	}
-
 	protected function insertMatchedAlters($position, $defer, ToxgToken $token, ToxgParser $parser)
 	{
 		// We need the fully-qualified name to do matching.
@@ -325,49 +256,6 @@ class ToxgOverlay
 
 			if (in_array($fqname, $alter['match']))
 				$parser->insertSource(clone $alter['source'], $defer === 'defer');
-		}
-	}
-
-	protected function insertMatchedHTML($position, $defer, ToxgToken $token, ToxgParser $parser)
-	{
-		$alters = $this->alters[$position];
-		foreach ($alters as $alter)
-		{
-			if (!$alter)
-				continue;
-
-			if (empty($alter['html']))
-				continue;
-
-			if (!empty($alter['html']['element']) && $alter['html']['element'] != $token->name)
-				continue;
-			elseif (!empty($alter['html']['attributes']))
-			{
-				$failed = false;
-
-				foreach ($alter['html']['attributes'] as $name => $value)
-				{
-					if ($name == 'class')
-					{
-						if (!isset($token->attributes['class']))
-							continue;
-						$classes = explode(' ', $token->attributes['class']);
-						foreach ($value as $val)
-							if (!in_array($val, $classes))
-								$failed = true;
-					}
-					else
-					{
-						if (!isset($token->attributes[$name]) || $token->attributes[$name] != $value)
-							$failed = true;
-					}
-				}
-			}
-
-			if ($failed)
-				continue;
-
-			$parser->insertSource(clone $alter['source'], $defer === 'defer');
 		}
 	}
 }

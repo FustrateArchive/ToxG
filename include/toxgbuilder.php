@@ -63,32 +63,28 @@ class ToxgBuilder
 	}
 
 	// callback(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
-	public function listenEmit($nsuri, $name, $callback, $side = 'after')
+	public function listenEmit($nsuri, $name, $callback)
 	{
-		$side = $side === 'after' ? 'after' : 'before';
-
-		$this->listeners[$nsuri][$name][$side][] = $callback;
+		$this->listeners[$nsuri][$name][] = $callback;
 	}
 
-	protected function fireEmit(ToxgToken $token, $side = 'after')
+	protected function fireEmit(ToxgToken $token)
 	{
 		// This actually fires a whole mess of events, but easier to hook into.
 		// In this case, it's cached, so it's fairly cheap.
-		$this->fireActualEmit($token->nsuri, $token->name, $token, $side);
-		$this->fireActualEmit('*', $token->name, $token, $side);
-		$this->fireActualEmit($token->nsuri, '*', $token, $side);
-		$this->fireActualEmit('*', '*', $token, $side);
+		$this->fireActualEmit($token->nsuri, $token->name, $token);
+		$this->fireActualEmit('*', $token->name, $token);
+		$this->fireActualEmit($token->nsuri, '*', $token);
+		$this->fireActualEmit('*', '*', $token);
 	}
 
-	protected function fireActualEmit($nsuri, $name, ToxgToken $token, $side = 'after')
+	protected function fireActualEmit($nsuri, $name, ToxgToken $token)
 	{
-		$side = $side === 'after' ? 'after' : 'before';
-
 		// If there are no listeners, nothing to do.
-		if (empty($this->listeners[$nsuri]) || empty($this->listeners[$nsuri][$name]) || empty($this->listeners[$nsuri][$name][$side]))
+		if (empty($this->listeners[$nsuri]) || empty($this->listeners[$nsuri][$name]))
 			return;
 
-		$listeners = $this->listeners[$nsuri][$name][$side];
+		$listeners = $this->listeners[$nsuri][$name];
 		foreach ($listeners as $callback)
 		{
 			// We don't use call_user_func because we want to allow by reference passing.
@@ -116,21 +112,11 @@ class ToxgBuilder
 
 	public function parsedContent(ToxgToken $token, ToxgParser $parser)
 	{
-		// Content... with listeners!
-		if (in_array($token->type, array('html-tag-start', 'html-tag-empty', 'html-tag-end')))
-		{
-			$this->fireEmit($token, 'before');
-			$this->emitOutputString($token->data, $token);
-			$this->fireEmit($token, 'after');
-		}
-		else
-			$this->emitOutputString($token->data, $token);
+		$this->emitOutputString($token->data, $token);
 	}
 
 	public function parsedElement(ToxgToken $token, ToxgParser $parser)
 	{
-		$this->fireEmit($token, 'before');
-
 		if ($token->nsuri === ToxgTemplate::TPL_NAMESPACE)
 		{
 			$this->has_emitted = false;
@@ -145,7 +131,7 @@ class ToxgBuilder
 			elseif ($token->name === 'alter')
 				$this->handleTagAlter($token);
 
-			$this->fireEmit($token, 'after');
+			$this->fireEmit($token);
 
 			// If there was no emitted code, it's probably an error.
 			if ($this->has_emitted === false && $this->debugging)
@@ -154,7 +140,8 @@ class ToxgBuilder
 		else
 		{
 			$this->handleTagCall($token);
-			$this->fireEmit($token, 'after');
+
+			$this->fireEmit($token);
 		}
 	}
 
@@ -279,12 +266,10 @@ class ToxgBuilder
 		{
 			$this->emitCode('global $__toxg_argstack; if (!isset($__toxg_argstack)) $__toxg_argstack = array();', $token);
 
-			if (in_array('*', $args_inherit))
-				$this->emitCode('$__toxg_args = array(' . implode(', ', $args_escaped) . ') + $__toxg_params;', $token);
-			elseif (!empty($args_inherit))
+			if (!empty($args_inherit))
 				$this->emitCode('$__toxg_args = array(' . implode(', ', $args_escaped) . ') + array_intersect_key($__toxg_params, array_flip(' . var_export($args_inherit, true) . '));', $token);
 			else
-				$this->emitCode('$__toxg_args = array(' . implode(', ', $args_escaped) . ');', $token);
+				$this->emitCode('$__toxg_args = array(' . implode(', ', $args_escaped) . ') + $__toxg_params;', $token);
 
 			$this->emitCode('$__toxg_argstack[] = &$__toxg_args;', $token);
 		}

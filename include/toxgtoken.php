@@ -34,14 +34,11 @@ class ToxgToken
 		switch ($this->type)
 		{
 		case 'tag-end':
-		case 'html-tag-end':
 			$this->parseEnd();
 			break;
 
 		case 'tag-start':
-		case 'html-tag-start':
 		case 'tag-empty':
-		case 'html-tag-empty':
 			$this->parseStart();
 			break;
 
@@ -86,7 +83,7 @@ class ToxgToken
 		$this->setNamespace();
 
 		// A start tag will be 1 from end, empty tag 2 from end (/>)...
-		$end_offset = ($this->type == 'tag-start' || $this->type == 'html-tag-start') ? 1 : 2;
+		$end_offset = $this->type == 'tag-start' ? 1 : 2;
 
 		if ($this->data_pos < strlen($this->data) - $end_offset)
 			$this->toss('syntax_invalid_tag');
@@ -119,6 +116,10 @@ class ToxgToken
 	{
 		if ($this->ns !== '')
 			$this->nsuri = $this->source->getNamespace($this->ns);
+
+		// If we don't have a namespace, this is XHTML.
+		if ($this->nsuri === false)
+			$this->type = 'content';
 	}
 
 	protected function parseName()

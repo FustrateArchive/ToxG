@@ -149,16 +149,9 @@ class ToxgParser
 		case 'tag-empty':
 			$this->parseTag($token);
 			break;
-		case 'html-tag-start':
-		case 'html-tag-empty':
-			$this->parseHTMLTag($token);
-			break;
 
 		case 'tag-end':
 			$this->parseTagEnd($token);
-			break;
-		case 'html-tag-end':
-			$this->parseHTMLTagEnd($token);
 			break;
 		}
 	}
@@ -278,49 +271,6 @@ class ToxgParser
 		// After we fire the event, we'll cleanup the call variables.
 		if ($token->nsuri !== ToxgTemplate::TPL_NAMESPACE)
 			$this->handleTagCall($token, 'after');
-	}
-
-	protected function parseHTMLTag(ToxgToken $token)
-	{
-		// For a couple of these, we do special stuff.
-		if ($token->nsuri == ToxgTemplate::TPL_NAMESPACE)
-		{
-			// We only have a couple of built in constructs.
-			if ($token->name === 'template')
-				$this->handleTagTemplate($token);
-			elseif ($token->name === 'content')
-				$this->handleTagContent($token);
-			elseif ($token->name === 'output')
-				$this->handleTagOutput($token);
-			elseif ($token->name === 'json')
-				$this->handleTagJSON($token);
-			elseif ($token->name === 'alter')
-				$this->handleTagAlter($token);
-		}
-		// Before we fire the event, save the template vars (before alters insert data.)
-		else
-			$this->handleTagCall($token, 'before');
-
-		if ($token->type === 'html-tag-start')
-			array_push($this->tree, $token);
-
-		$this->fire('parsedContent', $token);
-	}
-
-	protected function parseHTMLTagEnd(ToxgToken $token)
-	{
-		if (empty($this->tree))
-			$token->toss('parsing_tag_already_closed', $token->prettyName());
-
-		$close_token = array_pop($this->tree);
-
-		// Darn, it's not the same one.
-		if ($close_token->name !== $token->name)
-			$token->toss('parsing_tag_end_unmatched', $token->prettyName(), $close_token->prettyName(), $close_token->file, $close_token->line);
-
-		// This makes it easier, since they're on the same element after all.
-		$token->attributes = $close_token->attributes;
-		$this->fire('parsedContent', $token);
 	}
 
 	protected function handleTagTemplate(ToxgToken $token)

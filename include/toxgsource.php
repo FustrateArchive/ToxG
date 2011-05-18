@@ -16,20 +16,17 @@
  *
  * The standard token types are:
  *
- *   - var-ref:           A reference to a variable. ({$x})
- *   - lang-ref:          A reference to a language string. ({#x})
- *   - tag-start:         A start tag. ({tpl:if} or <tpl:if>)
- *   - tag-empty:         An empty tag. (<tpl:if />)
- *   - tag-end:           An end tag. (</tpl:if>)
- *   - cdata-start:       Start of CDATA. (<![CDATA[)
- *   - cdata-end:         End of CDATA. (]]>)
- *   - comment-start:     The start of a comment. (<!---)
- *   - comment-end:       The end of a comment. (--->)
- *   - comment:           The contents of a comment.
- *   - html-tag-start:    Start of an HTML tag (<p>).
- *   - html-tag-empty:    An empty HTML tag (<img />).
- *   - html-tag-end:      An HTML end tag (</a>).
- *   - content:           Any other HTML, pretty much just text nodes.
+ *   - var-ref:       A reference to a variable. ({$x})
+ *   - lang-ref:      A reference to a language string. ({#x})
+ *   - tag-start:     A start tag. ({tpl:if} or <tpl:if>)
+ *   - tag-empty:     An empty tag. (<tpl:if />)
+ *   - tag-end:       An end tag. (</tpl:if>)
+ *   - cdata-start:   Start of CDATA. (<![CDATA[)
+ *   - cdata-end:     End of CDATA. (]]>)
+ *   - comment-start: The start of a comment. (<!---)
+ *   - comment-end:   The end of a comment. (--->)
+ *   - comment:       The contents of a comment.
+ *   - content:       Any other HTML.
  *
  * The basic use of this class will look like:
  *
@@ -242,7 +239,7 @@ class ToxgSource
 			return $this->makeToken('comment-start', strlen('<!---'));
 		}
 
-		// Namespaced elements are handled a bit differently... and by a bit, I mean really.
+		// Must be namespaced or not interesting, so bail early if obviously not.
 		$ns_mark = $this->firstPosOf(':', 1);
 		if ($ns_mark !== false)
 		{
@@ -252,17 +249,15 @@ class ToxgSource
 			if ($ns[0] === '/')
 				$ns = substr($ns, 1);
 
-			// Okay, then, the namespace was found invalid so just treat it as content.
 			if (!self::validNCName($ns))
-			{
-				// !!! Determine if we're in an HTML tag, so we can allow hooks. Should be done in a cleaner way.
-				if (trim($ns[0], "a..zA..Z") === '')
-					return $this->readGenericTag('html-tag', '<', '>', 1);
-				else
-					// We really are looking at a bunch of junk
-					return $this->readContent(1);
-			}
+				$ns = false;
 		}
+		else
+			$ns = false;
+
+		// Okay, then, the namespace was found invalid so just treat it as content.
+		if ($ns === false)
+			return $this->readContent(1);
 
 		return $this->readGenericTag('tag', '<', '>', 1 + strlen($ns) + 1);
 	}
@@ -373,16 +368,16 @@ class ToxgSource
 				throw new ToxgExceptionFile($this->file, $this->line, 'syntax_invalid_tag');
 		}
 
-		if ($type === 'tag' || $type === 'html-tag')
+		if ($type === 'tag')
 		{
 			// Last char is > or }, so an empty tag would have a / before that.
 			if ($this->data_buffer[$end_pos - 2] === '/')
-				$type = $type . '-empty';
+				$type = 'tag-empty';
 			// And... obviously, if the second char is a /, it's an end tag.
 			elseif ($this->data_buffer[$this->data_pos + 1] === '/')
-				$type = $type . '-end';
+				$type = 'tag-end';
 			else
-				$type = $type . '-start';
+				$type = 'tag-start';
 		}
 
 		return $this->makeToken($type, $end_pos - $this->data_pos);

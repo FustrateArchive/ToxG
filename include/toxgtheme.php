@@ -47,9 +47,9 @@ class ToxgTheme
 		$this->template_params[$key] = $value;
 	}
 
-	public function listenEmit($nsuri, $name, $callback, $side = 'after')
+	public function listenEmit($nsuri, $name, $callback)
 	{
-		return $this->templates->listenEmit($nsuri, $name, $callback, $side);
+		return $this->templates->listenEmit($nsuri, $name, $callback);
 	}
 
 	public function callOverlays(array $name, array $ns)
@@ -114,21 +114,25 @@ class ToxgTheme
 
 		foreach ($this->_templates as $filename)
 		{
-			// Did they give us the full path to a file? This way, we support both a common template directory and modular template directories.
-			if (file_exists($filename))
-			{
-				$source = $filename;
-				$compiled = $this->compile_dir . '/.toxg.' . preg_replace('~[^a-zA-Z0-9_-]~', '_', $filename) . '.' . $overlay_hash . '.php';
-			}
-			else
-			{
-				$source = $this->template_dir . '/' . $filename . '.' . $this->extension;
-				$compiled = $this->compile_dir . '/.toxg.' . $filename . '.' . $overlay_hash . '.php';
-			}
+			$source = $filename;
 
 			$inherited = array();
+
+			// Look for it in the inherited dirs
 			foreach ($this->inherited_dirs as $dir)
-				$inherited[] = $dir . '/' . $filename . '.' . $this->extension;
+				if (file_exists($dir . '/' . $filename . '.' . $this->extension))
+					$inherited[] = $dir . '/' . $filename . '.' . $this->extension;
+
+			// Did they give us the full path to a file? This way, we support both a common template directory and modular template directories.
+			if (file_exists($filename))
+				$source = $filename;
+			else if (file_exists($this->template_dir . '/' . $filename . '.' . $this->extension))
+				$source = $this->template_dir . '/' . $filename . '.' . $this->extension;
+			else if (!empty($inherited))
+				// Take the first inherited template and use it as our main one.
+				$source = array_pop($inherited);
+
+			$compiled = $this->compile_dir . '/.toxg.' . preg_replace('~[^a-zA-Z0-9_-]~', '_', $filename) . '.' . $overlay_hash . '.php';
 
 			// Note: if overlays change, this won't work unless the overlay was touched.
 			// Normally, you'd flush the system when it needs a recompile.
@@ -147,9 +151,11 @@ class ToxgTheme
 
 		foreach ($this->_overlays as $filename)
 		{
+			$full = $filename;
+
 			if (file_exists($filename))
 				$full = $filename;
-			else
+			else if (file_exists($this->template_dir . '/' . $filename . '.' . $this->extension))
 				$full = $this->template_dir . '/' . $filename . '.' . $this->extension;
 
 			$this->mtime = max($this->mtime, filemtime($full));
