@@ -115,7 +115,13 @@ class ToxgTheme
 	{
 		$this->templates->setCommonVars($this->common_vars);
 
-		$overlay_hash = substr(md5('dummy' . implode('', $this->_overlays) . implode('', $this->overlayCalls)), 0, 25);
+        $template_list = array();
+        foreach ($this->inside as $inside)
+            $template_list[] = $inside[1] . $inside[0];
+        foreach ($this->layers as $layer)
+            $template_list[] = $layer[1] . $layer[0];
+
+		$overlay_hash = substr(md5('dummy' . implode('', $this->_overlays) . implode('', $this->overlayCalls) . implode('', $template_list)), 0, 15);
 
 		foreach ($this->_templates as $filename)
 		{
