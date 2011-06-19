@@ -33,6 +33,7 @@ class ToxgException extends Exception
 		'overlay_element_outside_alter' => 'Unexpected element %s while looking for <tpl:container>s and <tpl:alter>s.',
 		'overlay_content_outside_alter' => 'Unexpected content when looking for <tpl:container>s and <tpl:alter>s.  Put it in a comment, perhaps?',
 		'overlay_other_outside_alter' => 'Unexpected %s when looking for <tpl:container>s and <tpl:alter>s.',
+		'overlay_alter_must_be_not_empty' => 'Please always use an start tag like <tpl:alter match="x:y" position="before">, it should have content inside it.',
 
 		// *** Syntax problems:
 
@@ -62,6 +63,7 @@ class ToxgException extends Exception
 		'generic_tpl_missing_required' => 'Missing attribute %s for %s (required: %s.)',
 		'generic_tpl_no_ns_or_name' => 'All template and alter names must have both a namespace and a name.',
 		'generic_tpl_empty_attr' => 'Missing or empty attribute %s for %s.',
+		'tpl_container_invalid_doctype' => 'Unsupported doctype: only html and xhtml are supported.',
 		'tpl_content_must_be_empty' => 'Please always use an empty tag like <tpl:content />, it cannot have content inside it.',
 		'tpl_content_inside_invalid' => 'You cannot use tpl:content within tpl:if, tpl:foreach, etc.  It must be inside a tpl:template.',
 		'tpl_content_twice' => 'Only one tpl:content is allowed per template.',
@@ -75,15 +77,17 @@ class ToxgException extends Exception
 		'tpl_template_inside_template' => 'Templates cannot contain other templates.  Forget a closing tpl:template?',
 		'tpl_template_inside_alter' => 'Templates must be outside alters, templates, and other elements.',
 		'tpl_template_must_be_not_empty' => 'Please always use an start tag like <tpl:template name="x:y">, it should have content inside it.',
-		'tpl_template_missing_name' => 'Undefined name attribute for tpl:template.',
+		'tpl_template_missing_name' => 'Undefined or empty name attribute for tpl:template.',
 		'tpl_template_name_without_ns' => 'Every template should have a namespace, %s didn\'t have one.',
 		'tpl_template_name_unknown_ns' => 'You need to declare namespaces even for templates (%s was undeclared.)',
+		'tpl_template_name_empty_name' => 'You need both a namespace and name for every template (%s didn\'t have a name.)',
 		'tpl_template_duplicate_name' => 'Duplicate tpl:template named %s.',
 		'tpl_alter_inside_template' => 'Any tpl:alter must be outside other alters, templates, etc.',
 		'tpl_alter_missing_match_position' => 'Element tpl:alter must have match="ns:template" and position="before" or similar.',
 		'tpl_alter_invalid_position' => 'Unsupported position for tpl:alter.',
 		'tpl_alter_match_without_ns' => 'Every matched element should have a namespace, %s didn\'t have one.',
 		'tpl_alter_match_unknown_ns' => 'You need to declare namespaces even for matched elements (%s was undeclared.)',
+		'tpl_alter_match_empty_name' => 'Every matched element should have a namespace and name, %s didn\'t have one.',
 		'tpl_alter_recursion' => 'Potential alter recursion detected on %s.',
 
 		// *** Expression parsing:

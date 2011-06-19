@@ -3,6 +3,7 @@
 require(dirname(__FILE__) . '/validate.php');
 require(dirname(__FILE__) . '/harness.php');
 require(dirname(__FILE__) . '/list.php');
+require(dirname(__FILE__) . '/specialtheme.php');
 
 error_reporting(E_ALL);
 set_error_handler('error_handler');

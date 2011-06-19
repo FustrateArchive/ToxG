@@ -9,6 +9,7 @@ class ToxgParser
 	protected $tree = array();
 	protected $templates = array();
 	protected $state = 'outside';
+	protected $doctype = 'xhtml';
 
 	public function __construct($file)
 	{
@@ -132,11 +133,17 @@ class ToxgParser
 			break;
 
 		case 'cdata-start':
-			$this->parseCDATA($token, true);
+			if ($this->doctype === 'xhtml')
+				$this->parseCDATA($token, true);
+			else
+				$this->parseContent($token);
 			break;
 
 		case 'cdata-end':
-			$this->parseCDATA($token, false);
+			if ($this->doctype === 'xhtml')
+				$this->parseCDATA($token, false);
+			else
+				$this->parseContent($token);
 			break;
 
 		case 'comment-start':
@@ -178,7 +185,27 @@ class ToxgParser
 				$token->toss('parsing_content_outside_template');
 		}
 		else
+		{
+			// In HTML mode, we need to check to go in and out of CDATA.
+			// Note: we depend on the tokenizer giving us each HTML element in a separate token.
+			// Otherwise, we'd have to check for <script> and </script>.
+			if ($this->doctype === 'html')
+			{
+				// !!! Avoid preg?
+				if ($this->inside_cdata === false)
+				{
+					if (preg_match('~\<(script|style|textarea|title)[\t\r\n \>/]~', $token->data, $match) != 0)
+						$this->inside_cdata = $match[1];
+				}
+				elseif ($this->inside_cdata !== false)
+				{
+					if (preg_match('~\</(' . preg_quote($this->inside_cdata, '~') . ')[\t\r\n \>/]~', $token->data, $match) != 0)
+						$this->inside_cdata = false;
+				}
+			}
+
 			$this->fire('parsedContent', $token);
+		}
 	}
 
 	protected function parseRef(ToxgToken $token)
@@ -192,7 +219,7 @@ class ToxgParser
 		$token->ns = 'tpl';
 		$token->nsuri = ToxgTemplate::TPL_NAMESPACE;
 		$token->attributes['value'] = $token->data;
-		$token->attributes['as'] = $this->inside_cdata ? 'raw' : 'html';
+		$token->attributes['as'] = $this->inside_cdata !== false ? 'raw' : 'html';
 
 		$this->parseTag($token);
 	}
@@ -216,7 +243,9 @@ class ToxgParser
 		if ($token->nsuri == ToxgTemplate::TPL_NAMESPACE)
 		{
 			// We only have a couple of built in constructs.
-			if ($token->name === 'template')
+			if ($token->name === 'container')
+				$this->handleTagContainer($token);
+			elseif ($token->name === 'template')
 				$this->handleTagTemplate($token);
 			elseif ($token->name === 'content')
 				$this->handleTagContent($token);
@@ -250,7 +279,7 @@ class ToxgParser
 
 		// Darn, it's not the same one.
 		if ($close_token->nsuri != $token->nsuri || $close_token->name !== $token->name)
-			$token->toss('parsing_tag_end_unmatched', $token->prettyName(), $close_token->prettyName(), $close_token->file, $close_token->line);
+			$this->wrongTagEnd($token, $close_token);
 
 		if ($token->nsuri !== ToxgTemplate::TPL_NAMESPACE)
 			$this->handleTagCall($token, 'before');
@@ -273,11 +302,31 @@ class ToxgParser
 			$this->handleTagCall($token, 'after');
 	}
 
+	protected function wrongTagEnd(ToxgToken $token, ToxgToken $expected)
+	{
+		// Special case this error since it's sorta common.
+		if ($expected->nsuri === ToxgTemplate::TPL_NAMESPACE && $expected->name === 'else')
+			$expected->toss('generic_tpl_must_be_empty', $expected->prettyName());
+		else
+			$token->toss('parsing_tag_end_unmatched', $token->prettyName(), $expected->prettyName(), $expected->file, $expected->line);
+	}
+
+	protected function handleTagContainer(ToxgToken $token)
+	{
+		if (isset($token->attributes['doctype']))
+		{
+			if ($token->attributes['doctype'] === 'html' || $token->attributes['doctype'] === 'xhtml')
+				$this->doctype = $token->attributes['doctype'];
+			else
+				$token->toss('tpl_container_invalid_doctype');
+		}
+	}
+
 	protected function handleTagTemplate(ToxgToken $token)
 	{
 		if ($token->type === 'tag-empty')
 			$token->toss('tpl_template_must_be_not_empty');
-		if (!isset($token->attributes['name']))
+		if (empty($token->attributes['name']))
 			$token->toss('tpl_template_missing_name');
 
 		if (strpos($token->attributes['name'], ':') === false)
@@ -292,6 +341,8 @@ class ToxgParser
 		$nsuri = $token->getNamespace($ns);
 		if ($nsuri === false)
 			$token->toss('tpl_template_name_unknown_ns', $ns);
+		if (strlen($name) === 0)
+			$token->toss('tpl_template_name_empty_name', $token->attributes['name']);
 
 		// This is the fully-qualified name, which can/should not be duplicated.
 		$fqname = $nsuri . ':' . $name;
@@ -354,12 +405,9 @@ class ToxgParser
 		// Would be easier if content/alters applied to templates, but then they must be defined.
 		if ($token->type === 'tag-start' && $pos === 'before')
 			$type = 'template-push';
-		elseif ($token->type === 'tag-empty' && $pos === 'before')
-			$type = 'template-push';
-		elseif ($token->type === 'tag-empty' && $pos === 'after')
-			$type = 'template-pop';
 		elseif ($token->type === 'tag-end' && $pos === 'after')
 			$type = 'template-pop';
+		// Since we convert empty calls to start/end, we don't need to worry about tag-empty.
 		else
 			return;
 
@@ -396,7 +444,7 @@ class ToxgParser
 
 		// Default the as parameter just like {$x} does.
 		if (!isset($token->attributes['as']))
-			$token->attributes['as'] = $this->inside_cdata ? 'raw' : 'html';
+			$token->attributes['as'] = $this->inside_cdata !== false ? 'raw' : 'html';
 	}
 
 	protected function handleTagJSON(ToxgToken $token)
@@ -408,7 +456,7 @@ class ToxgParser
 
 		// Default the as parameter just like {$x} does.
 		if (!isset($token->attributes['as']))
-			$token->attributes['as'] = $this->inside_cdata ? 'raw' : 'html';
+			$token->attributes['as'] = $this->inside_cdata !== false ? 'raw' : 'html';
 	}
 
 	protected function handleTagAlter(ToxgToken $token)

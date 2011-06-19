@@ -2,7 +2,7 @@
 
 class ToxgTemplate
 {
-	const VERSION = '0.1-alpha5';
+	const VERSION = '0.1-alpha6';
 	// !!! Need a domain name/final name/etc.?
 	const TPL_NAMESPACE = 'urn:toxg:template';
 
@@ -87,10 +87,21 @@ class ToxgTemplate
 		}
 	}
 
+	protected function setPrebuilderCurrentTemplate()
+	{
+		$source_files = array();
+		foreach ($this->source_files as $source_file)
+			$source_files[] = is_object($source_file) ? $source_file->__toString() : (string) $source_file;
+		$this->prebuilder->setCurrentTemplate(implode(PATH_SEPARATOR, $source_files));
+	}
+
 	public function compileFirstPass()
 	{
 		if ($this->prebuilder === null)
 			$this->prebuilder = new ToxgPrebuilder();
+
+		// Tell the prebuilder who we are so it can apply template-local stuff properly.
+		$this->setPrebuilderCurrentTemplate();
 
 		// We actually parse through each file twice: first time is for optimization.
 		foreach ($this->source_files as $source_file)
@@ -118,6 +129,9 @@ class ToxgTemplate
 		$this->builder->disableDebugging(!$this->debugging);
 		$this->builder->setCommonVars($this->common_vars);
 		$this->builder->setCacheFile($cache_file);
+
+		// Tell the prebuilder who we are so it can apply template-local stuff properly.
+		$this->setPrebuilderCurrentTemplate();
 
 		try
 		{
@@ -160,6 +174,7 @@ class ToxgTemplate
 		$above = $prefix . '_above';
 		$below = $prefix . '_below';
 
+		// !!! Should this be a ToxgException?
 		if (!function_exists($above))
 			throw new Exception('Unable to find template named ' . $name . ' in namespace ' . $nsuri);
 

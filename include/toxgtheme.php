@@ -169,7 +169,8 @@ class ToxgTheme
 			else if (file_exists($this->template_dir . '/' . $filename . '.' . $this->extension))
 				$full = $this->template_dir . '/' . $filename . '.' . $this->extension;
 
-			$this->mtime = max($this->mtime, filemtime($full));
+			if ($this->mtime_check)
+				$this->mtime = max($this->mtime, filemtime($full));
 			$this->templates->addOverlays(array($full));
 		}
 
