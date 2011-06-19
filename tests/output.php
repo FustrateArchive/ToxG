@@ -45,12 +45,6 @@ function test_output_007($harness)
 	$harness->addData('<tpl:template name="my:output"><tpl:set var="{$x}" value="\'<>&\'" /><tpl:output value="\'<>&\'" as="raw" /> <tpl:output value="{$x}" as="raw" /></tpl:template>');
 }
 
-function test_output_008($harness)
-{
-	$harness->expectOutput('<![CDATA[ <>& <>& ]]>');
-	$harness->addData('<tpl:template name="my:output"><tpl:set var="{$x}" value="\'<>&\'" /><![CDATA[ <tpl:output value="\'<>&\'" /> {$x} ]]></tpl:template>');
-}
-
 function test_output_009($harness)
 {
 	$harness->expectOutput('pass');
@@ -348,6 +342,85 @@ function test_output_043($harness)
 		<tpl:template name="my:output"><my:fake-input tag="select" name="pass" fail="fail" /></tpl:template>
 		<tpl:template name="my:fake-input"><my:fake-input2 tpl:inherit="name" /></tpl:template>
 		<tpl:template name="my:fake-input2">{$name}</tpl:template>');
+}
+
+function test_output_044($harness)
+{
+	$harness->expectOutput('1 &amp; 2');
+	$harness->addData('
+		<tpl:template name="my:output"><my:output2 param="1 &amp; 2" /></tpl:template>
+		<tpl:template name="my:output2">{$param}</tpl:template>');
+}
+
+function test_output_045($harness)
+{
+	$harness->expectOutputFailure(5);
+	$harness->addData('
+		<tpl:template name="my:notcalled"></tpl:template>
+		<tpl:template name="my:output"><my:example /><my:example2 /></tpl:template>
+		<tpl:template name="my:example">
+			{$undef}
+		</tpl:template>');
+}
+
+function test_output_escape_001($harness)
+{
+	$harness->expectOutput(ToxgTestHarness::$to_escape);
+	$harness->addWrappedData(ToxgTestHarness::$to_escape);
+}
+
+function test_output_escape_002($harness)
+{
+	$harness->expectOutput(htmlspecialchars(ToxgTestHarness::$to_escape));
+	$harness->addWrappedData('{ToxgTestHarness::$to_escape}');
+}
+
+function test_output_escape_003($harness)
+{
+	$harness->expectOutput('<![CDATA[ <>& <>& ]]>');
+	$harness->addWrappedData('<tpl:set var="{$x}" value="\'<>&\'" /><![CDATA[ <tpl:output value="\'<>&\'" /> {$x} ]]>');
+}
+
+function test_output_escape_004($harness)
+{
+	$harness->expectOutput('<![CDATA[ ' . ToxgTestHarness::$to_escape . ' ]]>');
+	$harness->addWrappedData('<![CDATA[ {ToxgTestHarness::$to_escape} ]]>');
+}
+
+function test_output_escape_005($harness)
+{
+	$harness->expectOutput(htmlspecialchars(ToxgTestHarness::$to_escape));
+	$harness->addData('<tpl:container doctype="xhtml"><tpl:template name="my:output">{ToxgTestHarness::$to_escape}</tpl:template></tpl:container>');
+}
+
+function test_output_escape_006($harness)
+{
+	$harness->expectOutput(htmlspecialchars(ToxgTestHarness::$to_escape));
+	$harness->addData('<tpl:container doctype="html"><tpl:template name="my:output">{ToxgTestHarness::$to_escape}</tpl:template></tpl:container>');
+}
+
+function test_output_escape_007($harness)
+{
+	$harness->expectOutput('<script>' . htmlspecialchars(ToxgTestHarness::$to_escape) . '</script>');
+	$harness->addData('<tpl:container doctype="xhtml"><tpl:template name="my:output"><script>{ToxgTestHarness::$to_escape}</script></tpl:template></tpl:container>');
+}
+
+function test_output_escape_008($harness)
+{
+	$harness->expectOutput('<script>' . ToxgTestHarness::$to_escape . '</script>');
+	$harness->addData('<tpl:container doctype="html"><tpl:template name="my:output"><script>{ToxgTestHarness::$to_escape}</script></tpl:template></tpl:container>');
+}
+
+function test_output_escape_009($harness)
+{
+	$harness->expectFailure(1, 'tpl_container_invalid_doctype');
+	$harness->addData('<tpl:container doctype="xyz_invalid"><tpl:template name="my:output"><script>{ToxgTestHarness::$to_escape}</script></tpl:template></tpl:container>');
+}
+
+function test_output_escape_010($harness)
+{
+	$harness->expectOutput('<script></script>' . htmlspecialchars(ToxgTestHarness::$to_escape) . '<script></script>');
+	$harness->addData('<tpl:container doctype="html"><tpl:template name="my:output"><script></script>{ToxgTestHarness::$to_escape}<script></script></tpl:template></tpl:container>');
 }
 
 ?>

@@ -143,12 +143,24 @@ class ToxgExpression
 		{
 		case '$':
 			$this->readVarRef();
+
+			if ($this->data_pos >= $this->data_len || $this->data[$this->data_pos] !== '}')
+			{
+				if ($this->data[$this->data_pos] === ']')
+					$this->toss('expression_brackets_unmatched');
+				else
+					$this->toss('expression_unknown_error');
+			}
 			break;
 
 		case '#':
 			if ($allow_lang)
 			{
 				$this->readLangRef();
+
+				if ($this->data_pos >= $this->data_len || $this->data[$this->data_pos] !== '}')
+					$this->toss('expression_unknown_error');
+
 				break;
 			}
 			else
@@ -162,6 +174,14 @@ class ToxgExpression
 				$this->built[] = $this->eatUntil($next);
 				$this->built[] = $this->eatUntil($next + 2);
 				$this->readVarRef();
+
+				if ($this->data_pos >= $this->data_len || $this->data[$this->data_pos] !== '}')
+				{
+					if ($this->data[$this->data_pos] === ']')
+						$this->toss('expression_brackets_unmatched');
+					else
+						$this->toss('expression_unknown_error');
+				}
 				break;
 			}
 			// Intentional fall-through on false.
@@ -205,6 +225,7 @@ class ToxgExpression
 				$name = $this->eatUntil($next);
 				if ($name === '')
 					$this->toss('expression_var_name_empty');
+
 				$this->built[] = '$' . self::makeVarName($name);
 				break;
 
@@ -224,6 +245,13 @@ class ToxgExpression
 				break;
 
 			case ']':
+				// Ah, hit the end, jump out.  Must be a nested one.
+				if ($brackets <= 0)
+				{
+					$this->data_pos--;
+					break 2;
+				}
+
 				$this->built[] = ']';
 
 				$brackets--;
@@ -258,7 +286,7 @@ class ToxgExpression
 			}
 		}
 
-		if ($brackets > 0)
+		if ($brackets != 0)
 			$this->toss('expression_brackets_unmatched');
 	}
 
@@ -273,9 +301,8 @@ class ToxgExpression
 		case '#':
 			$this->readLangRef();
 			break;
- 
+
 		case '{':
-			// No need for end, since the curlies are expected to be matched.
 			$this->readReference();
 			break;
 
@@ -325,12 +352,12 @@ class ToxgExpression
 		$first = true;
 		while ($this->data_pos < $this->data_len)
 		{
-			$next = $this->firstPosOf(array(':', '}'), 1);
+			$next = $this->firstPosOf(array(':', '}', ']'), 1);
 			if ($next === false)
 				$next = $this->data_len;
 
 			$c = $this->data[$this->data_pos];
-			if ($c === '}')
+			if ($c === '}' || $c === ']')
 				break;
 			$this->data_pos++;
 

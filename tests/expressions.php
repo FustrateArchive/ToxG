@@ -67,6 +67,12 @@ function test_invalid_expression_011($harness)
 	$harness->addWrappedData('<tpl:output value="{#:}" />');
 }
 
+function test_invalid_expression_012($harness)
+{
+	$harness->expectFailure(1, 'expression_invalid_meta');
+	$harness->addWrappedData('<tpl:output value="{$x.y[$a.b.c.d].z]}" />');
+}
+
 function test_expression_001($harness)
 {
 	$harness->addWrappedData('<tpl:output value="{$x}" />');
@@ -196,6 +202,46 @@ function test_expression_024($harness)
 function test_expression_025($harness)
 {
 	$harness->addWrappedData('<tpl:output value="{#lang:{#lang2:1:3:4:5}:6:7}" />');
+}
+
+function test_expression_026($harness)
+{
+	$harness->addWrappedData('<tpl:output value="{#lang1:{#lang2:param1:{$obj->prop}:param3}:{$var1}:{$var2}:param}" />');
+}
+
+function test_expression_027($harness)
+{
+	$harness->addWrappedData('<tpl:output value="{MyClass::func()}" />');
+}
+
+function test_expression_028($harness)
+{
+	$harness->addWrappedData('<tpl:output value="{MyClass::$prop}" />');
+}
+
+function test_expression_029($harness)
+{
+	$harness->addWrappedData('<tpl:output value="{#lang1:{#lang2:param1:{MyClass::$prop}:param3}:{$var1}:{$var2}:param}" />');
+}
+
+function test_expression_030($harness)
+{
+	$harness->addWrappedData('<tpl:output value="{#lang1:{#lang2:param1:$var0:param3}:{$var1}:{$var2}:param}" />');
+}
+
+function test_expression_031($harness)
+{
+	$harness->addWrappedData('<tpl:output value="{$x.y[$a.b.c.d].z}" />');
+}
+
+function test_expression_032($harness)
+{
+	$harness->addWrappedData('<tpl:output value="{$x.y.#z}" />');
+}
+
+function test_expression_033($harness)
+{
+	$harness->addWrappedData('<tpl:output value="{$x.y[#z]}" />');
 }
 
 ?>

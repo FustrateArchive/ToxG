@@ -80,6 +80,9 @@ Keep in mind, the CDATA will also be output in the HTML (which indicates to
 take the text as is, which is why it need not be escaped.)  This is mainly
 used in <script> elements.
 
+You can also use doctype="html" on a tpl:container element.  This will make it
+parse <script> and similar elements as CDATA.
+
 
 Template calls
 --------------------------------------------------------------------------------
@@ -92,6 +95,23 @@ The asterisk means to pass along any and all attributes passed into the
 template.  Otherwise, the list gives the names of attributes to pass along.
 
 This is beneficial when writing convenience templates.
+
+
+Attributes
+--------------------------------------------------------------------------------
+Within elements, attributes are handled specially.  For template calls, they
+are decoded so they work the same way normal elements will.  This means:
+
+	<my:title name="This &amp; That" />
+
+Might produce:
+
+	<div class="title" title="This &amp; That">This &amp; That</div>
+
+However, you don't need to escape the values, and for expressions you
+shouldn't.  For example, this is correct:
+
+	<tpl:if test="{$first} && {$last}">There's only one.</tpl:if>
 
 
 Supported elements
@@ -107,6 +127,10 @@ tpl:container
 	Often used to "contain" templates.  Can also be used inside a template.
 
 	No required attributes.
+
+	May have an attribute "doctype", with the value "html" or "xhtml".  The
+	default is "xhtml".  When set to "html", <script> and <style> will trigger
+	CDATA behavior (no HTML escaping.)
 
 	<tpl:container xmlns:my="http://www.unknownbrackets.org/example/">
 		...
@@ -239,7 +263,7 @@ tpl:foreach
 	Requires a "from" attribute that defines the list or array of items.
 
 	Requires an "as" attribute which is the variable to use for the value.
-	This can also be a {$key} => {$value} pair, if specified.
+	It can also be a key value pair, separated by =>.
 
 	<tpl:foreach from="{$animals}" as="{$animal}">
 		<li>{$animal.name} goes {$animal.sound}.</li>
@@ -250,7 +274,7 @@ tpl:foreach
 	</tpl:foreach>
 
 tpl:for
-................................................................................
+...............................................................................
 	Used to loop through code multiple times, based on certain inputs.
 
 	Requires at least one attribute from the following:

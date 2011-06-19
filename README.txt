@@ -3,7 +3,7 @@ TOX-G: Template Overlay XHTML Generator
 
 Version
 --------------------------------------------------------------------------------
-Release 0.1-alpha5 made on 2011-01-29.
+Release 0.1-alpha6 made on 2011-06-19.
 
 
 Overview
@@ -40,9 +40,9 @@ TOX-G has been tested on and fully supports the following PHP versions:
 
 	5.1.0 - 5.1.6
 	5.2.0 - 5.2.17
-	5.3.0 - 5.3.5
+	5.3.0 - 5.3.6
 
-It has also been tested on a 2011-01-20 snapshot of PHP 6, and is believed to
+It has also been tested on a 2011-04-30 snapshot of PHP 6, and is believed to
 be forwards-compatible.
 
 On PHP 5.1.x, an implementation of json_encode() is required for full

@@ -33,6 +33,12 @@ function test_tags_output_006($harness)
 	$harness->addWrappedData('<tpl:output value="{$x} + 1" as="raw" />');
 }
 
+function test_tags_output_007($harness)
+{
+	$harness->expectFailure(1, 'tpl_output_invalid_as');
+	$harness->addWrappedData('<tpl:output value="{$x} + 1" as="invalid_as" />');
+}
+
 function test_tags_raw_001($harness)
 {
 	$harness->addWrappedData('<tpl:raw value="{$x}" />');
@@ -156,6 +162,12 @@ function test_tags_if_007($harness)
 	$harness->addWrappedOverlay('<tpl:if test="1">test<tpl:else test="0" />2</tpl:if>');
 }
 
+function test_tags_if_008($harness)
+{
+	$harness->expectFailure(1, 'generic_tpl_must_be_empty');
+	$harness->addWrappedData('<tpl:if test="1">test<tpl:else>2</tpl:if>');
+}
+
 function test_tags_flush_001($harness)
 {
 	$harness->addWrappedData('<tpl:flush />');
@@ -256,6 +268,12 @@ function test_tags_json_005($harness)
 function test_tags_json_006($harness)
 {
 	$harness->addWrappedData('<tpl:json value="{$x} + 1" as="raw" />');
+}
+
+function test_tags_json_007($harness)
+{
+	$harness->expectFailure(1, 'tpl_output_invalid_as');
+	$harness->addWrappedData('<tpl:json value="{$x} + 1" as="invalid_as" />');
 }
 
 function test_tags_default_001($harness)
@@ -359,6 +377,11 @@ function test_tags_element_006($harness)
 {
 	$harness->expectFailure(1, 'generic_tpl_empty_attr');
 	$harness->addWrappedData('<tpl:element tpl:name="" />');
+}
+
+function test_tags_element_007($harness)
+{
+	$harness->addWrappedData('<tpl:element tpl:name="div" tpl:inherit="*" value="1">test</tpl:element>');
 }
 
 ?>

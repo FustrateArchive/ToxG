@@ -241,6 +241,11 @@ class ToxgBuilder
 			$arg_names[] = ToxgExpression::makeVarName($k);
 
 			$k = '\'' . addcslashes(ToxgExpression::makeVarName($k), '\\\'') . '\'';
+
+			// The string passed to templates will get double-escaped unless we unescape it here.
+			// We don't do this for tpl: things, though, just for calls.
+			$v = html_entity_decode($v);
+
 			$args_escaped[] = $k . ' => ' . $this->parseExpression('stringWithVars', $v, $token);
 		}
 
@@ -289,7 +294,10 @@ class ToxgBuilder
 		$this->emitCode('extract($__toxg_params, EXTR_SKIP);', $token);
 
 		if ($this->debugging)
-			$this->emitCode($this->getErrorClassName() . '::register();');
+		{
+			$this->emitCode('$__toxg_error_handler = new ' . $this->getErrorClassName() . '();');
+			$this->emitDebugPos($token, 'code', true);
+		}
 	}
 
 	protected function emitTemplateEnd($last, $token)
@@ -300,9 +308,6 @@ class ToxgBuilder
 			$omit = array('\'__toxg_args\'', '\'__toxg_argstack\'', '\'__toxg_stack\'', '\'__toxg_params\'', '\'__toxg_func\'');
 			$this->emitCode('$__toxg_params = compact(array_diff(array_keys(get_defined_vars()), array(' . implode(', ', $omit) . ')));', $token);
 		}
-
-		if ($this->debugging)
-			$this->emitCode($this->getErrorClassName() . '::restore();');
 
 		$this->emitCode('}', $token);
 	}
@@ -422,12 +427,12 @@ class ToxgBuilder
 		$this->last_line += substr_count($code, "\n");
 	}
 
-	protected function emitDebugPos(ToxgToken $token, $type = 'code')
+	protected function emitDebugPos(ToxgToken $token, $type = 'code', $force = false)
 	{
 		// Okay, maybe we don't need to bulk up the template.  Let's see how we can get out of updating the pos.
 
 		// If the file is the same, we have a chance.
-		if ($token->file === $this->last_file)
+		if ($token->file === $this->last_file && !$force)
 		{
 			// If the line is the same as it should be, we're good.
 			if ($token->line == $this->last_line)
@@ -442,10 +447,17 @@ class ToxgBuilder
 			// Okay, this means the line number was lower (template?) so let's go.
 		}
 
+		// In case this is actually a database "filename" or something, don't wipe it out.
+		$file = $token->file;
+		if (realpath($file) != false)
+			$file = realpath($file);
+
 		if ($type === 'echo')
 			$this->fwrite(';');
 		// This triggers the error system to remap the caller's file/line with the specified.
-		$this->fwrite("\n" . $this->getErrorClassName() . '::remap(\'' . addcslashes(realpath($token->file), '\\\'') . '\', ' . (int) $token->line . ');');
+		if (!$force)
+			$this->fwrite("\n");
+		$this->fwrite($this->getErrorClassName() . '::remap(\'' . addcslashes($file, '\\\'') . '\', ' . (int) $token->line . ');');
 
 		$this->last_file = $token->file;
 		$this->last_line = $token->line;

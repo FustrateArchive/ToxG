@@ -9,8 +9,7 @@ function test_invalid_alter_001($harness)
 
 function test_invalid_alter_002($harness)
 {
-	// !!! Maybe not correct error?
-	$harness->expectFailure(1, 'tpl_alter_match_without_ns');
+	$harness->expectFailure(1, 'tpl_alter_missing_match_position');
 	$harness->addDataForOverlay();
 	$harness->addOverlay('<tpl:alter match="" position="before">test</tpl:alter>');
 }
@@ -52,14 +51,13 @@ function test_invalid_alter_007($harness)
 
 function test_invalid_alter_008($harness)
 {
-	$harness->expectFailure(1, 'overlay_other_outside_alter');
+	$harness->expectFailure(1, 'overlay_alter_must_be_not_empty');
 	$harness->addDataForOverlay();
 	$harness->addOverlay('<tpl:alter match="my:output my:example" position="before"/>');
 }
 
 function test_invalid_alter_009($harness)
 {
-	// !!! Maybe not correct error?
 	$harness->expectFailure(1, 'generic_tpl_no_ns_or_name');
 	$harness->addDataForOverlay();
 	$harness->addOverlay('<tpl:alter match="my:" position="before">test</tpl:alter>');

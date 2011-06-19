@@ -3,6 +3,7 @@
 class ToxgTestHarness extends ToxgTemplate
 {
 	static $test = 'pass_var';
+	static $to_escape = '& < > "';
 	const TEST = 'pass_const';
 
 	protected $layers = array('output--toxg-direct');
@@ -17,6 +18,9 @@ class ToxgTestHarness extends ToxgTemplate
 	{
 		parent::__construct(null);
 		$this->source_files = array();
+
+		// Don't let previous mappings confuse us.
+		ToxgErrors::reset();
 	}
 
 	public function setOutputParams(array $output_params)
@@ -119,8 +123,12 @@ class ToxgTestHarness extends ToxgTemplate
 		}
 		catch (Exception $e)
 		{
-			if ($this->expect_output_fail_line === null || $this->expect_output_fail_line != $e->getLine())
+			if ($this->expect_output_fail_line === null)
 				throw $e;
+			elseif ($e->getFile() !== 'unit-test-file')
+				throw new Exception('Error did not occur in unit-test-file.');
+			elseif ($this->expect_output_fail_line != $e->getLine())
+				throw new Exception('Error did not occur on the correct line: ' . $e->getLine());
 
 			$actual = '';
 			$failed = true;
@@ -152,10 +160,7 @@ class ToxgTestHarness extends ToxgTemplate
 				call_user_func_array($func_prefix . '_below', array(&$this->output_params));
 			}
 
-			$actual = ob_get_contents();
-			ob_end_clean();
-
-			return $actual;
+			return ob_get_clean();
 		}
 		catch (Exception $e)
 		{

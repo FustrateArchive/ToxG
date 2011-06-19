@@ -6,6 +6,16 @@ class ToxgErrors
 	protected static $retain = 0;
 	protected static $files = array();
 
+	public function __construct()
+	{
+		self::register();
+	}
+
+	public function __destruct()
+	{
+		self::restore();
+	}
+
 	public static function register()
 	{
 		if (self::$retain++ > 0)
@@ -20,6 +30,11 @@ class ToxgErrors
 			return;
 
 		restore_error_handler();
+	}
+
+	public static function reset()
+	{
+		self::$files = array();
 	}
 
 	public static function remap($file, $line)
@@ -55,16 +70,8 @@ class ToxgErrors
 				}
 			}
 
-			// We're only going to be custom if there was no prior...
-			// This shouldn't ever really happen anyway.
 			if (self::$prior === null)
-			{
-				echo $errno, ': ', $errstr, ' in ', $file, ' on line ', $line, "\n";
-				if ($errno % 255 == E_ERROR)
-					die;
-
-				return true;
-			}
+				return self::defaultHandler($errno, $errstr, $file, $line);
 		}
 
 		// Call the old error handler with the updated file and line.
@@ -72,6 +79,36 @@ class ToxgErrors
 			return call_user_func(self::$prior, $errno, $errstr, $file, $line, $ctx);
 
 		return false;
+	}
+
+	protected static function defaultHandler($errno, $errstr, $file, $line)
+	{
+		// We're only going to be custom if there was no prior...
+		// This shouldn't ever really happen anyway.
+		$setting = @ini_get('display_errors');
+		if ($setting == 0 && $setting !== 'stderr')
+			return true;
+
+		// We need some way to get the pretty error, even if there are new errors later.
+		$consts = get_defined_constants();
+		$error_type = $errno;
+		foreach ($consts as $name => $value)
+		{
+			if (strpos($name, 'E_') === 0 && $value === $errno)
+				$error_type = $name;
+		}
+
+		$fp = fopen($setting === 'stderr' ? 'php://stderr' : 'php://output', 'wt');
+		if ($fp)
+		{
+			fwrite($fp, $error_type . ': ' . $errstr . ' in ' . $file . ' on line ' . $line . "\n");
+			fclose($fp);
+		}
+
+		if ($errno % 255 == E_ERROR)
+			die;
+
+		return true;
 	}
 }
 

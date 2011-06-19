@@ -201,8 +201,7 @@ function test_invalid_overlay_002($harness)
 
 function test_invalid_overlay_003($harness)
 {
-	// !!! Should this be, alter must not be empty?
-	$harness->expectFailure(1, 'overlay_other_outside_alter');
+	$harness->expectFailure(1, 'overlay_alter_must_be_not_empty');
 	$harness->addData('<tpl:template name="my:asdf"></tpl:template>');
 	$harness->addOverlay('<tpl:alter match="my:asdf" position="before" />test</tpl:alter>');
 }

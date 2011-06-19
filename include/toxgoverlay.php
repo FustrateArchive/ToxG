@@ -104,6 +104,18 @@ class ToxgOverlay
 			// Otherwise, just whitespace, ignore it.
 			break;
 
+		case 'tag-empty':
+			if ($token->nsuri == ToxgTemplate::TPL_NAMESPACE)
+			{
+				if ($token->name === 'alter')
+					$token->toss('overlay_alter_must_be_not_empty');
+				else
+					$token->toss('overlay_element_outside_alter', $token->prettyName());
+			}
+			else
+				$token->toss('overlay_element_outside_alter', $token->prettyName());
+			break;
+
 		default:
 			$token->toss('overlay_other_outside_alter', $token->type);
 		}
@@ -135,6 +147,8 @@ class ToxgOverlay
 			$token->toss('tpl_alter_missing_match_position');
 		if (!isset($this->alters[$token->attributes['position']]))
 			$token->toss('tpl_alter_invalid_position');
+		if (trim($token->attributes['match'], " \t\r\n") === '')
+			$token->toss('tpl_alter_missing_match_position');
 
 		$this->parse_state = 'alter';
 		$this->parse_alter = &$this->alters[$token->attributes['position']][];
@@ -181,6 +195,8 @@ class ToxgOverlay
 
 			if ($nsuri === false)
 				$this->parse_alter['token']->toss('tpl_alter_match_unknown_ns', $ns);
+			if (strlen($name) === 0)
+				$token->toss('tpl_alter_match_empty_name', $match);
 
 			// Just store it "fully qualified"...
 			$this->parse_alter['match'][] = $nsuri . ':' . $name;
@@ -234,13 +250,10 @@ class ToxgOverlay
 			$this->insertMatchedAlters('aftercontent', 'normal', $close_token, $parser);
 			$this->insertMatchedAlters('after', 'defer', $close_token, $parser);
 		}
-		elseif ($token->type === 'tag-empty')
-		{
-			$this->insertMatchedAlters('before', 'normal', $token, $parser);
-			$this->insertMatchedAlters('beforecontent', 'normal', $token, $parser);
-			$this->insertMatchedAlters('aftercontent', 'defer', $token, $parser);
-			$this->insertMatchedAlters('after', 'defer', $token, $parser);
-		}
+		// Since we convert elements to pairs from empty, we don't care about tag-empty.
+		// !!! Should this be a ToxgException?
+		else
+			throw new Exception('Unexpected token type: ' . $token->type);
 	}
 
 	protected function insertMatchedAlters($position, $defer, ToxgToken $token, ToxgParser $parser)
