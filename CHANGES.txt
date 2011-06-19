@@ -1,6 +1,15 @@
 TOX-G: Major changes
 ================================================================================
 
+Version 0.1-alpha6
+--------------------------------------------------------------------------------
+ + Using HTML5, rather than XHTML, escaping rules is now possible with the
+   doctype attribute on tpl:container.
+ * Template attributes are now unescaped and re-escaped rather than double
+   escaped.
+ * Template local tpl:alter elements are no longer applied to other templates.
+
+
 Version 0.1-alpha5
 --------------------------------------------------------------------------------
 

@@ -5,11 +5,11 @@ class ToxgPrebuilder
 	protected $templates = array();
 	protected $template_usage = array();
 	protected $parse_state = 'outside';
-	protected $primary_overlay = null;
+	protected $overlays = array();
+	protected $current_template = null;
 
 	public function __construct()
 	{
-		$this->primary_overlay = new ToxgOverlay(null);
 	}
 
 	public function getTemplateForBuild($token)
@@ -53,6 +53,11 @@ class ToxgPrebuilder
 		return $this->template_usage;
 	}
 
+	public function setCurrentTemplate($template_id)
+	{
+		$this->current_template = $template_id;
+	}
+
 	public function setupParser(ToxgParser $parser)
 	{
 		$parser->listen('parsedContent', array($this, 'parsedContent'));
@@ -61,7 +66,7 @@ class ToxgPrebuilder
 
 	public function setupOverlayParser(ToxgParser $parser)
 	{
-		$this->primary_overlay->setupParser($parser);
+		$this->getCurrentOverlay()->setupParser($parser);
 	}
 
 	public function parsedContent(ToxgToken $token, ToxgParser $parser)
@@ -177,8 +182,17 @@ class ToxgPrebuilder
 
 	protected function handleAlterToken(ToxgToken $token)
 	{
-		if (!$this->primary_overlay->parseToken($token))
+		if (!$this->getCurrentOverlay()->parseToken($token))
 			$this->parse_state = 'outside';
+	}
+
+	protected function getCurrentOverlay()
+	{
+		$overlay = &$this->overlays[$this->current_template];
+		if (!isset($overlay))
+			$overlay = new ToxgOverlay(null);
+
+		return $overlay;
 	}
 
 	public static function makeTemplateName($token, $type = 'token')

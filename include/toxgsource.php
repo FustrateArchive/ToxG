@@ -114,6 +114,11 @@ class ToxgSource
 			return false;
 	}
 
+	public function __toString()
+	{
+		return __CLASS__ . ' ' . $this->file;
+	}
+
 	public function readToken()
 	{
 		if ($this->isDataEOF())
@@ -182,11 +187,9 @@ class ToxgSource
 		{
 		case '<':
 			return $this->readTagToken();
-			break;
 
 		case '{':
 			return $this->readCurlyToken();
-			break;
 
 		case ']':
 			if ($this->firstPosOf(']]>') === $this->data_pos)
