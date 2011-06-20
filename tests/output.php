@@ -423,4 +423,12 @@ function test_output_escape_010($harness)
 	$harness->addData('<tpl:container doctype="html"><tpl:template name="my:output"><script></script>{ToxgTestHarness::$to_escape}<script></script></tpl:template></tpl:container>');
 }
 
+function test_inherit_all_001($harness)
+{
+	$harness->expectOutput('<strong>llama</strong>');
+	$harness->addData('
+		<tpl:template name="my:output" animal="llama"><my:inner_template tpl:inherit="*" /></tpl:template>
+		<tpl:template name="my:inner_template"><strong>{$animal}</strong></tpl:template>');
+}
+
 ?>
