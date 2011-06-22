@@ -470,5 +470,25 @@ class ToxgExpression
 	{
 		return 'tpl_' . md5($nsuri) . '_' . self::makeVarName($name);
 	}
+
+	/**
+	 * I wasn't completely sure where to put this
+	 * Recursively htmlspecialchar's a string or array
+	 *
+	 * @static
+	 * @access public
+	 * @param mixed $value The value to htmlspecialchar
+	 * @return mixed
+	 */
+	public static function htmlspecialchars($value)
+	{
+		if (is_array($value))
+			foreach ($value as $k => $v)
+				$value[$k] = self::htmlspecialchars($v);
+		else
+			$value = htmlspecialchars($value, ENT_COMPAT, 'UTF-8');
+
+		return $value;
+	}
 }
 ?>

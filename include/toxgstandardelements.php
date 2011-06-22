@@ -114,7 +114,7 @@ class ToxgStandardElements
 			$expr = $expr[0];
 
 		if ($attributes['as'] === 'html' && !$raw)
-			$builder->emitOutputParam('htmlspecialchars(' . $expr . ', ENT_COMPAT, "UTF-8", false)', $token);
+			$builder->emitOutputParam('htmlspecialchars(' . $expr . ', ENT_COMPAT, "UTF-8")', $token);
 		elseif ($attributes['as'] === 'raw' || $raw)
 			$builder->emitOutputParam('(' . $expr . ')', $token);
 		else
@@ -267,7 +267,7 @@ class ToxgStandardElements
 		$expr = $builder->parseExpression('normal', $attributes['value'], $token);
 
 		if ($attributes['as'] === 'html')
-			$builder->emitOutputParam('mysql_real_escape_string(htmlspecialchars(json_encode(' . $expr . '), ENT_COMPAT, "UTF-8", false))', $token);
+			$builder->emitOutputParam('mysql_real_escape_string(htmlspecialchars(json_encode(' . $expr . '), ENT_COMPAT, "UTF-8"))', $token);
 		elseif ($attributes['as'] === 'raw')
 			$builder->emitOutputParam('mysql_real_escape_string(json_encode(' . $expr . '))', $token);
 		else
@@ -287,13 +287,13 @@ class ToxgStandardElements
 
 		// !!! Better way to detect lang use?
 		if (substr($value, 0, 1) !== '$')
-			$builder->emitCode('if (' . $value . ') echo htmlspecialchars(' . $value . ', ENT_COMPAT, "UTF-8", false);', $token);
+			$builder->emitCode('if (' . $value . ') echo htmlspecialchars(' . $value . ', ENT_COMPAT, "UTF-8");', $token);
 		else
-			$builder->emitCode('if (!empty(' . $value . ')) echo htmlspecialchars(' . $value . ', ENT_COMPAT, "UTF-8", false);', $token);
+			$builder->emitCode('if (!empty(' . $value . ')) echo htmlspecialchars(' . $value . ', ENT_COMPAT, "UTF-8");', $token);
 
 		// Don't bother with an else if it's not needed.
 		if ($default != '\'\'')
-			$builder->emitCode('else echo htmlspecialchars(' . $default . ', ENT_COMPAT, "UTF-8", false);', $token);
+			$builder->emitCode('else echo htmlspecialchars(' . $default . ', ENT_COMPAT, "UTF-8");', $token);
 	}
 
 	public function tpl_element(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
@@ -329,7 +329,7 @@ class ToxgStandardElements
 
 			$builder->emitOutputString('<', $token);
 			$builder->emitOutputParam($name, $token);
-			$builder->emitCode('foreach ($__toxg_args as $__toxg_k => $__toxg_v) echo \' \', htmlspecialchars($__toxg_k, ENT_COMPAT, "UTF-8", false), \'="\', htmlspecialchars($__toxg_v, ENT_COMPAT, "UTF-8", false), \'"\';', $token);
+			$builder->emitCode('foreach ($__toxg_args as $__toxg_k => $__toxg_v) echo \' \', htmlspecialchars($__toxg_k, ENT_COMPAT, "UTF-8"), \'="\', htmlspecialchars($__toxg_v, ENT_COMPAT, "UTF-8"), \'"\';', $token);
 
 			if ($token->type === 'tag-empty')
 				$builder->emitOutputString(' />', $token);
