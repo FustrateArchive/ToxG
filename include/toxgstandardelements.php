@@ -266,10 +266,17 @@ class ToxgStandardElements
 
 		$expr = $builder->parseExpression('normal', $attributes['value'], $token);
 
+		$skip_value_encode = false;
+		if (!empty($attribute['skip-value-encode']))
+			$skip_value_encode = $builder->parseExpression('boolean', $attribute['skip-value-encode'], $token);
+
 		if ($attributes['as'] === 'html')
-			$builder->emitOutputParam('json_encode(ToxgExpression::htmlspecialchars(' . $expr . '))', $token);
+			$builder->emitOutputParam('htmlspecialchars(json_encode(' . $expr . '))', $token);
 		elseif ($attributes['as'] === 'raw')
-			$builder->emitOutputParam('mysql_real_escape_string(json_encode(' . $expr . '))', $token);
+			if ($skip_value_encode)
+				$builder->emitOutputParam('json_encode(' . $expr . ')', $token);
+			else
+				$builder->emitOutputParam('json_encode(ToxgExpression::htmlspecialchars(' . $expr . '))', $token);
 		else
 			$token->toss('tpl_output_invalid_as');
 	}
