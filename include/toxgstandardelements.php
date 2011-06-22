@@ -267,7 +267,7 @@ class ToxgStandardElements
 		$expr = $builder->parseExpression('normal', $attributes['value'], $token);
 
 		if ($attributes['as'] === 'html')
-			$builder->emitOutputParam('mysql_real_escape_string(htmlspecialchars(json_encode(' . $expr . '), ENT_COMPAT, "UTF-8"))', $token);
+			$builder->emitOutputParam('json_encode(ToxgExpression::htmlspecialchars(' . $expr . '))', $token);
 		elseif ($attributes['as'] === 'raw')
 			$builder->emitOutputParam('mysql_real_escape_string(json_encode(' . $expr . '))', $token);
 		else
