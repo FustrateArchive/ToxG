@@ -278,8 +278,8 @@ function test_tags_json_007($harness)
 
 function test_tags_json_008($harness)
 {
-	$harness->expectOutput(json_encode(array('test' => 'test')));
-	$harness->addWrappedData('<tpl:json value="array(\'test\' => \'test\')" as="raw" skip-value-encode="true" />');
+	$harness->expectOutput(json_encode(array('test' => 'test&test')));
+	$harness->addWrappedData('<tpl:json value="array(\'test\' => \'test&test\')" as="raw" skip-value-encode="true" />');
 }
 function test_tags_json_009($harness)
 {
