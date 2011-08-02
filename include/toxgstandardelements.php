@@ -180,7 +180,7 @@ class ToxgStandardElements
 			if (strpos($from, '$') === false && strpos($from, '(') === false)
 				$token->toss('tpl_foreach_invalid_from');
 
-			$builder->emitCode('foreach (' . $from . ' as ' . $as . ') {', $token);
+			$builder->emitCode('if (!empty(' . $from . ')) foreach (' . $from . ' as ' . $as . ') {', $token);
 		}
 		else
 		{
