@@ -266,17 +266,14 @@ class ToxgStandardElements
 
 		$expr = $builder->parseExpression('normal', $attributes['value'], $token);
 
-		$skip_value_encode = false;
-		if (!empty($attribute['skip-value-encode']))
-			$skip_value_encode = $builder->parseExpression('boolean', $attribute['skip-value-encode'], $token);
+		$skip_value_encode = 'false';
+		if (!empty($attributes['skip-value-encode']))
+			$skip_value_encode = $builder->parseExpression('boolean', $attributes['skip-value-encode'], $token);
 
 		if ($attributes['as'] === 'html')
 			$builder->emitOutputParam('htmlspecialchars(json_encode(' . $expr . '))', $token);
 		elseif ($attributes['as'] === 'raw')
-			if ($skip_value_encode)
-				$builder->emitOutputParam('json_encode(' . $expr . ')', $token);
-			else
-				$builder->emitOutputParam('json_encode(ToxgExpression::htmlspecialchars(' . $expr . '))', $token);
+			$builder->emitOutputParam('json_encode(' . $skip_value_encode . ' ? ' . $expr . ' : ToxgExpression::htmlspecialchars(' . $expr . '))', $token);
 		else
 			$token->toss('tpl_output_invalid_as');
 	}
