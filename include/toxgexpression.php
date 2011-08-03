@@ -320,9 +320,10 @@ class ToxgExpression
 
 	protected function readRawRef($end, $require)
 	{
-		$string = substr($this->data, $this->data_pos, 3);
+		$string = substr($this->data, $this->data_pos - 1, 4);
 
-		if ($string == 'raw')
+		// Make sure it's not just an index that starts with raw
+		if ($string == ':raw')
 		{
 			// Get the last index of array
 			$keys = array_keys($this->built);
