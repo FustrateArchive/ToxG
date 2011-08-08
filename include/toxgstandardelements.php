@@ -162,6 +162,11 @@ class ToxgStandardElements
 		$this->requireNotEmpty($token);
 		$this->requireAttributes(array('from', 'as'), $attributes, $token);
 
+		$counter = null;
+
+		if (!empty($attributes['counter']))
+			$counter = $builder->parseExpression('variableNotLang', $attributes['counter'], $token);
+
 		if ($type === 'tag-start')
 		{
 			$from = $builder->parseExpression('normal', $attributes['from'], $token);
@@ -180,7 +185,7 @@ class ToxgStandardElements
 			if (strpos($from, '$') === false && strpos($from, '(') === false)
 				$token->toss('tpl_foreach_invalid_from');
 
-			$builder->emitCode('if (!empty(' . $from . ')) foreach (' . $from . ' as ' . $as . ') {', $token);
+			$builder->emitCode(($counter !== null ? ($counter . ' = 0;') : '') . 'foreach (' . $from . ' as ' . $as . ') {' . ($counter !== null ? ($counter . '++;') : ''), $token);
 		}
 		else
 		{
