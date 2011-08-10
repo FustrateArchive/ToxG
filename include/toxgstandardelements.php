@@ -185,7 +185,7 @@ class ToxgStandardElements
 			if (strpos($from, '$') === false && strpos($from, '(') === false)
 				$token->toss('tpl_foreach_invalid_from');
 
-			$builder->emitCode(($counter !== null ? ($counter . ' = 0;') : '') . 'foreach (' . $from . ' as ' . $as . ') {' . ($counter !== null ? ($counter . '++;') : ''), $token);
+			$builder->emitCode(($counter !== null ? ($counter . ' = 0;') : '') . 'if (!empty(' . $from . ')) foreach (' . $from . ' as ' . $as . ') {' . ($counter !== null ? ($counter . '++;') : ''), $token);
 		}
 		else
 		{
