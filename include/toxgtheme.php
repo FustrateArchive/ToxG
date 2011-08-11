@@ -89,9 +89,9 @@ class ToxgTheme
 		$this->needs_compile = true;
 	}
 
-	public function addTemplate($name, $ns = 'site')
+	public function addTemplate($name, $namespace = 'site')
 	{
-		$this->inside[] = array($name, $ns);
+		$this->inside[] = array($name, $namespace);
 	}
 
 	public function resetTemplates($name)
