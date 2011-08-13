@@ -6,6 +6,7 @@ class ToxgToken
 	public $type = 'tag-start';
 	public $file = null;
 	public $line = 0;
+	public $tabs = '';
 
 	public $ns = '';
 	public $nsuri = '';
@@ -25,6 +26,7 @@ class ToxgToken
 		$this->type = $token['type'];
 		$this->file = $token['file'];
 		$this->line = $token['line'];
+		$this->tabs = str_repeat("\t", $token['tabs']);
 
 		$this->parseData();
 	}

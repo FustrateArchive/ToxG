@@ -49,6 +49,7 @@ class ToxgSource
 	protected $line = 1;
 	protected $namespaces = array();
 	protected $wait_comment = false;
+	protected $next_token_tabs = 0;
 
 	public function __construct($data, $file, $line = 1)
 	{
@@ -396,6 +397,7 @@ class ToxgSource
 			'line' => $this->line,
 			'type' => $type,
 			'data' => $data,
+			'tabs' => $this->next_token_tabs,
 		));
 
 		// If it wasn't actually a valid tag, let's go back and eat less after all.
@@ -405,6 +407,9 @@ class ToxgSource
 			$this->data_pos -= $chars;
 			return $this->makeToken('content', 1);
 		}
+
+		// Count the tabs at the end, because we're magic like that
+		$this->next_token_tabs = strlen($data) - strlen(rtrim($data, "\t"));
 
 		// This token was now, next token will move forward as much as this token did.
 		$this->line += substr_count($data, "\n");
