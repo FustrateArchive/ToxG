@@ -13,7 +13,7 @@ class ToxgTheme
 	protected $overlays = array();
 	protected $mtime = 0;
 
-	protected $namespaces = array();
+	protected static $namespaces = array();
 
 	protected $templates = null;
 	protected $layers = array();
@@ -36,7 +36,7 @@ class ToxgTheme
 
 		$this->templates = new ToxgTemplateList();
 
-		$this->namespaces = array(
+		self::$namespaces = array(
 			'site' => $this->nsuri,
 			'tpl' => ToxgTemplate::TPL_NAMESPACE,
 		);
@@ -108,7 +108,7 @@ class ToxgTheme
 	{
 		$nsuri = is_null($nsuri) ? 'urn:ns:' . $name : $nsuri;
 
-		$this->namespaces[$name] = $nsuri;
+		self::$namespaces[$name] = $nsuri;
 	}
 
 	public function output()
@@ -177,7 +177,7 @@ class ToxgTheme
 		if ($this->needs_compile)
 		{
 			ToxgStandardElements::useIn($this->templates);
-			$this->templates->setNamespaces($this->namespaces);
+			$this->templates->setNamespaces(self::$namespaces);
 			$this->templates->compileAll();
 		}
 
@@ -199,8 +199,13 @@ class ToxgTheme
 
 	protected function callTemplate($name, $side, $nsuri = 'site')
 	{
-		$func = ToxgExpression::makeTemplateName($this->namespaces[$nsuri], $name . '--toxg-direct') . '_' . $side;
+		$func = ToxgExpression::makeTemplateName(self::$namespaces[$nsuri], $name . '--toxg-direct') . '_' . $side;
 		$func($this->template_params);
+	}
+
+	public static function getNamespace($name)
+	{
+		return self::$namespaces[$name];
 	}
 }
 

@@ -72,16 +72,13 @@ class ToxgStandardElements
 		list ($ns, $name) = explode(':', $attributes['name']);
 
 		if (empty($ns) || empty($name))
-			$this->toss('generic_tpl_no_ns_or_name');
+			$token->toss('generic_tpl_no_ns_or_name');
 
+		$ns = ToxgExpression::stringWithVars($ns, $token);
 		$name = ToxgExpression::stringWithVars($name, $token);
-		$nsuri = ToxgExpression::stringWithVars($token->getNamespace($ns), $token);
-		$base = 'ToxgExpression::makeTemplateName(' . $nsuri . ', ' . $name . ')';
+		$base = 'ToxgExpression::makeTemplateName(ToxgTheme::getNamespace(' . $ns . '), ' . $name . ')';
 		$func_above = $base . ' . \'_above\'';
 		$func_below = $base . ' . \'_below\'';
-
-		if (empty($name) || empty($ns) || empty($nsuri))
-			$token->toss('given name for tpl_call is empty');
 
 		$this->tpl_call_emitFunc($func_above, $builder, $attributes, true, $token);
 		$this->tpl_call_emitFunc($func_below, $builder, $attributes, false, $token);
