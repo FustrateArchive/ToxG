@@ -307,7 +307,7 @@ class ToxgBuilder
 		// This updates the parameters for the _below function.
 		if (!$last)
 		{
-			$omit = array('\'__toxg_args\'', '\'__toxg_argstack\'', '\'__toxg_stack\'', '\'__toxg_params\'', '\'__toxg_func\'');
+			$omit = array('\'__toxg_args\'', '\'__toxg_argstack\'', '\'__toxg_stack\'', '\'__toxg_params\'', '\'__toxg_func\'', '\'__toxg_error_handler\'');
 			$this->emitCode('$__toxg_params = compact(array_diff(array_keys(get_defined_vars()), array(' . implode(', ', $omit) . ')));', $token);
 		}
 
