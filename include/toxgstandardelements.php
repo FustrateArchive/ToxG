@@ -80,6 +80,21 @@ class ToxgStandardElements
 		$func_above = $base . ' . \'_above\'';
 		$func_below = $base . ' . \'_below\'';
 
+		// Reset the attributes, after figuring out which ones aren't "name"
+		$args = array_diff_key($attributes, array('name' => null));
+		$attributes = array();
+
+		// Pass any attributes along.
+		if (!empty($args))
+			foreach ($args as $k => $v)
+			{
+				$k = '\'' . addcslashes(ToxgExpression::makeVarName($k), '\\\'') . '\'';
+
+				// The string passed to templates will get double-escaped unless we unescape it here.
+				// We don't do this for tpl: things, though, just for calls.
+				$attributes[] = $k . ' => ' . ToxgExpression::stringWithVars(html_entity_decode($v), $token);
+			}
+
 		$this->tpl_call_emitFunc($func_above, $builder, $attributes, true, $token);
 		$this->tpl_call_emitFunc($func_below, $builder, $attributes, false, $token);
 	}
@@ -92,7 +107,9 @@ class ToxgStandardElements
 		$builder->emitCode('global $__toxg_argstack; if (!isset($__toxg_argstack)) $__toxg_argstack = array();', $token);
 
 		if ($first)
-			$builder->emitCode('$__toxg_args = unserialize(\'' . serialize($attributes) . '\'); $__toxg_argstack[] = &$__toxg_args;', $token);
+			$builder->emitCode('$__toxg_args = array(' . implode(', ', $attributes) . '); $__toxg_argstack[] = &$__toxg_args;', $token);
+		else
+			$builder->emitCode('global $__toxg_argstack; $__toxg_args = array_pop($__toxg_argstack);', $token);
 
 		// Better to use a de-refenced call than call_user_func/_array, because of reference issue.
 		$builder->emitCode('$__toxg_func = ' . $func_name . '; $__toxg_func($__toxg_args);', $token);
