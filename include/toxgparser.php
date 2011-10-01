@@ -129,6 +129,7 @@ class ToxgParser
 		case 'var-ref':
 		case 'lang-ref':
 		case 'output-ref':
+		case 'format-ref':
 			$this->parseRef($token);
 			break;
 

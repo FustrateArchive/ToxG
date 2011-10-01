@@ -10,10 +10,16 @@ class ToxgExpression
 	protected $is_raw = false;
 
 	protected static $lang_function = 'lang';
+	protected static $format_function = 'format';
 
 	public static function setLangFunction($func)
 	{
 		self::$lang_function = $func;
+	}
+
+	public static function setFormatFunction($func)
+	{
+		self::$format_function = $func;
 	}
 
 	public function __construct($data, ToxgToken $token)
@@ -165,6 +171,13 @@ class ToxgExpression
 			}
 			else
 				$this->toss('expression_expected_ref_nolang');
+		case '%':
+			$this->readFormatRef();
+
+			if ($this->data_pos >= $this->data_len || $this->data[$this->data_pos] !== '}')
+				$this->toss('expression_unknown_error');
+
+			break;
 
 		default:
 			// This could be a static.  If it is, we have a :: later on.
@@ -301,6 +314,9 @@ class ToxgExpression
 		case '#':
 			$this->readLangRef();
 			break;
+		case '%':
+			$this->readFormatRef();
+			break;
 
 		case '{':
 			$this->readReference();
@@ -345,36 +361,243 @@ class ToxgExpression
 
 	protected function readLangRef()
 	{
-		$this->built[] = self::$lang_function . '(';
+		// It looks like this: #xyz.abc[$mno][nilla].$rpg
+		// Which means:
+		//   x.y.z = x [ y ] [ z ]
+		//   x[y.z] = x [ y [ z ] ] 
+		//   x[y][z] = x [ y ] [ z ]
+		//   x[y[z]] = x [ y [ z ] ]
+		//
+		// When we hit a ., the next item is surrounded by brackets.
+		// When we hit a [, the next item has a [ before it.
+		// When we hit a ], there is no item, but just a ].
+
+		$brackets = 0;
+		$key = true;
 
 		if ($this->data_pos >= $this->data_len - 1 || $this->data[$this->data_pos + 1] === ':' || $this->data[$this->data_pos + 1] === '}')
 			$this->toss('expression_lang_name_empty');
 
-		$first = true;
 		while ($this->data_pos < $this->data_len)
 		{
-			$next = $this->firstPosOf(array(':', '}', ']'), 1);
+			$next = $this->firstPosOf(array('[', '.', ']', '}', ':'), 1);
 			if ($next === false)
 				$next = $this->data_len;
 
 			$c = $this->data[$this->data_pos];
-			if ($c === '}' || $c === ']')
-				break;
 			$this->data_pos++;
 
-			if (!$first)
-				$this->built[] = ', ';
-			$first = false;
+			switch ($c)
+			{
+			case '#':
+				$name = $this->eatUntil($next);
+				if ($name === '')
+					$this->toss('expression_lang_name_empty');
 
-			$this->readVarPart($next, true);
+				$this->built[] = self::$lang_function . '(array(\'' . $name . '\'';
+				break;
+
+			case '.':
+				if ($key)
+				{
+					$this->built[] = ',';
+					$this->readVarPart($next, true);
+				}
+				else
+				{
+					$this->built[] = '[';
+					$this->readVarPart($next, true);
+					$this->built[] = ']';
+				}
+				break;
+
+			case '[':
+				if ($key)
+				{
+					$this->built[] = ',';
+					$this->eatWhite();
+					$this->readVarPart($next, false);
+					$this->eatWhite();
+				}
+				else
+				{
+					$this->built[] = '[';
+					$this->eatWhite();
+					$this->readVarPart($next, false);
+					$this->eatWhite();
+				}
+
+				$brackets++;
+				break;
+
+			case ']':
+				// Ah, hit the end, jump out.  Must be a nested one.
+				if ($brackets <= 0)
+				{
+					$this->data_pos--;
+					break 2;
+				}
+
+				if (!$key)
+					$this->built[] = ']';
+
+				$brackets--;
+				break;
+
+			// All done - but don't skip it, our caller doesn't expect that.
+			case '}':
+				$this->data_pos--;
+				$this->built[] = '))';
+				break 2;
+
+			// Maybe we're done with this?
+			case ':':
+				if ($key)
+				{
+					$this->built[] = '), array(';
+				}
+				else
+				{
+					$this->built[] = ',';
+				}
+				$key = false;
+				$this->readVarPart($next);
+				break;
+			}
 		}
 
-		$this->built[] = ')';
+		if ($brackets != 0)
+			$this->toss('expression_brackets_unmatched');
+	}
+	protected function readFormatRef()
+	{
+		// It looks like this: %type:$mno:"nilla":$rpg
+		// Which means:
+		//   use formatter "type"
+		//   on $mno
+		//   with paramaters "nilla" and $rpg
+
+		$brackets = 0;
+
+		// Are we still looking for these?
+		$type = true;
+		$value = true;
+
+		if ($this->data_pos >= $this->data_len - 1 || $this->data[$this->data_pos + 1] === ':' || $this->data[$this->data_pos + 1] === '}')
+			$this->toss('expression_format_name_empty');
+
+		while ($this->data_pos < $this->data_len)
+		{
+			$next = $this->firstPosOf(array('[', '.', ']', '}', ':'), 1);
+			if ($next === false)
+				$next = $this->data_len;
+
+			$c = $this->data[$this->data_pos];
+			$this->data_pos++;
+
+			switch ($c)
+			{
+			case '%':
+				$name = $this->eatUntil($next);
+
+				if ($name === '')
+					$this->toss('expression_format_name_empty');
+
+				$this->built[] = self::$format_function . '(\'' . $name . '\'';
+				break;
+
+			case '.':
+				if ($type || $value)
+				{
+					$this->built[] = ',';
+					$this->readVarPart($next, true);
+				}
+				else
+				{
+					$this->built[] = '[';
+					$this->readVarPart($next, true);
+					$this->built[] = ']';
+				}
+				break;
+
+			case '[':
+				if ($type || $value)
+				{
+					$this->built[] = ',';
+					$this->eatWhite();
+					$this->readVarPart($next, false);
+					$this->eatWhite();
+				}
+				else
+				{
+					$this->built[] = '[';
+					$this->eatWhite();
+					$this->readVarPart($next, false);
+					$this->eatWhite();
+				}
+
+				$brackets++;
+				break;
+
+			case ']':
+				// Ah, hit the end, jump out.  Must be a nested one.
+				if ($brackets <= 0)
+				{
+					$this->data_pos--;
+					break 2;
+				}
+
+				if (!$type && !$value)
+					$this->built[] = ']';
+
+				$brackets--;
+				break;
+
+			// All done - but don't skip it, our caller doesn't expect that.
+			case '}':
+				$this->data_pos--;
+				$this->built[] = '))';
+				break 2;
+
+			// Maybe we're done with this?
+			case ':':
+				if ($type)
+				{
+					$this->built[] = ', ';
+					$type = false;
+				}
+				else if ($value)
+				{
+					$this->built[] = ', array(';
+					$value = false;
+				}
+				else
+				{
+					$this->built[] = ',';
+				}
+
+				$this->readVarPart($next);
+				break;
+			}
+		}
+
+		if ($brackets != 0)
+			$this->toss('expression_brackets_unmatched');
 	}
 
 	protected function readString($end)
 	{
-		$this->built[] = '\'' . addcslashes($this->eatUntil($end), '\\\'') . '\'';
+		$value = $this->eatUntil($end);
+
+		// Did we split inside a string literal? Try to find the rest
+		if (($value[0] === '"' || $value[0] === '\'') && $value[0] !== substr($value, 0, -1))
+		{
+			$next = $this->firstPosOf(array($value[0]));
+
+			$value = substr($value, 1) . $this->eatUntil($next);
+		}
+
+		$this->built[] = '\'' . addcslashes($value, '\\\'') . '\'';
 	}
 
 	protected function readRaw()

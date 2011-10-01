@@ -18,6 +18,7 @@
  *
  *   - var-ref:       A reference to a variable. ({$x})
  *   - lang-ref:      A reference to a language string. ({#x})
+ *   - format-ref:    A reference to a formatter. ({%x})
  *   - tag-start:     A start tag. ({tpl:if} or <tpl:if>)
  *   - tag-empty:     An empty tag. (<tpl:if />)
  *   - tag-end:       An end tag. (</tpl:if>)
@@ -273,11 +274,13 @@ class ToxgSource
 			return $this->readContent(1);
 		$next_c = $this->data_buffer[$this->data_pos + 1];
 
-		// We support {$var}, {#lang}, and {tpl:stuff /}.
+		// We support {$var}, {#lang}, {%format:something}, and {tpl:stuff /}.
 		if ($next_c === '$')
 			$type = 'var-ref';
 		elseif ($next_c === '#')
 			$type = 'lang-ref';
+		elseif ($next_c === '%')
+			$type = 'format-ref';
 		else
 		{
 			// Could still be a var-ref in form CLASS::constant or CLASS::value.
