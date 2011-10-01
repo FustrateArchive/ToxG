@@ -590,7 +590,7 @@ class ToxgExpression
 		$value = $this->eatUntil($end);
 
 		// Did we split inside a string literal? Try to find the rest
-		if (($value[0] === '"' || $value[0] === '\'') && $value[0] !== substr($value, 0, -1))
+		if (($value[0] === '"' || $value[0] === '\'') && $value[0] !== substr($value, -1))
 		{
 			$next = $this->firstPosOf(array($value[0]));
 
