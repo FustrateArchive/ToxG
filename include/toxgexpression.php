@@ -173,10 +173,8 @@ class ToxgExpression
 				$this->toss('expression_expected_ref_nolang');
 		case '%':
 			$this->readFormatRef();
-
 			if ($this->data_pos >= $this->data_len || $this->data[$this->data_pos] !== '}')
 				$this->toss('expression_unknown_error');
-
 			break;
 
 		default:
@@ -371,32 +369,25 @@ class ToxgExpression
 		// When we hit a ., the next item is surrounded by brackets.
 		// When we hit a [, the next item has a [ before it.
 		// When we hit a ], there is no item, but just a ].
-
 		$brackets = 0;
 		$key = true;
-
 		if ($this->data_pos >= $this->data_len - 1 || $this->data[$this->data_pos + 1] === ':' || $this->data[$this->data_pos + 1] === '}')
 			$this->toss('expression_lang_name_empty');
-
 		while ($this->data_pos < $this->data_len)
 		{
 			$next = $this->firstPosOf(array('[', '.', ']', '}', ':'), 1);
 			if ($next === false)
 				$next = $this->data_len;
-
 			$c = $this->data[$this->data_pos];
 			$this->data_pos++;
-
 			switch ($c)
 			{
 			case '#':
 				$name = $this->eatUntil($next);
 				if ($name === '')
 					$this->toss('expression_lang_name_empty');
-
 				$this->built[] = self::$lang_function . '(array(\'' . $name . '\'';
 				break;
-
 			case '.':
 				if ($key)
 				{
@@ -410,7 +401,6 @@ class ToxgExpression
 					$this->built[] = ']';
 				}
 				break;
-
 			case '[':
 				if ($key)
 				{
@@ -426,30 +416,27 @@ class ToxgExpression
 					$this->readVarPart($next, false);
 					$this->eatWhite();
 				}
-
 				$brackets++;
 				break;
-
 			case ']':
 				// Ah, hit the end, jump out.  Must be a nested one.
 				if ($brackets <= 0)
 				{
+					// Quick exit, but we have to close the function first
+					$this->built[] = '))';
+
 					$this->data_pos--;
 					break 2;
 				}
-
 				if (!$key)
 					$this->built[] = ']';
-
 				$brackets--;
 				break;
-
 			// All done - but don't skip it, our caller doesn't expect that.
 			case '}':
 				$this->data_pos--;
 				$this->built[] = '))';
 				break 2;
-
 			// Maybe we're done with this?
 			case ':':
 				if ($key)
@@ -465,7 +452,6 @@ class ToxgExpression
 				break;
 			}
 		}
-
 		if ($brackets != 0)
 			$this->toss('expression_brackets_unmatched');
 	}
@@ -476,36 +462,27 @@ class ToxgExpression
 		//   use formatter "type"
 		//   on $mno
 		//   with paramaters "nilla" and $rpg
-
 		$brackets = 0;
-
 		// Are we still looking for these?
 		$type = true;
 		$value = true;
-
 		if ($this->data_pos >= $this->data_len - 1 || $this->data[$this->data_pos + 1] === ':' || $this->data[$this->data_pos + 1] === '}')
 			$this->toss('expression_format_name_empty');
-
 		while ($this->data_pos < $this->data_len)
 		{
 			$next = $this->firstPosOf(array('[', '.', ']', '}', ':'), 1);
 			if ($next === false)
 				$next = $this->data_len;
-
 			$c = $this->data[$this->data_pos];
 			$this->data_pos++;
-
 			switch ($c)
 			{
 			case '%':
 				$name = $this->eatUntil($next);
-
 				if ($name === '')
 					$this->toss('expression_format_name_empty');
-
 				$this->built[] = self::$format_function . '(\'' . $name . '\'';
 				break;
-
 			case '.':
 				if ($type || $value)
 				{
@@ -519,7 +496,6 @@ class ToxgExpression
 					$this->built[] = ']';
 				}
 				break;
-
 			case '[':
 				if ($type || $value)
 				{
@@ -535,10 +511,8 @@ class ToxgExpression
 					$this->readVarPart($next, false);
 					$this->eatWhite();
 				}
-
 				$brackets++;
 				break;
-
 			case ']':
 				// Ah, hit the end, jump out.  Must be a nested one.
 				if ($brackets <= 0)
@@ -546,19 +520,15 @@ class ToxgExpression
 					$this->data_pos--;
 					break 2;
 				}
-
 				if (!$type && !$value)
 					$this->built[] = ']';
-
 				$brackets--;
 				break;
-
 			// All done - but don't skip it, our caller doesn't expect that.
 			case '}':
 				$this->data_pos--;
 				$this->built[] = '))';
 				break 2;
-
 			// Maybe we're done with this?
 			case ':':
 				if ($type)
@@ -575,12 +545,10 @@ class ToxgExpression
 				{
 					$this->built[] = ',';
 				}
-
 				$this->readVarPart($next);
 				break;
 			}
 		}
-
 		if ($brackets != 0)
 			$this->toss('expression_brackets_unmatched');
 	}
@@ -590,10 +558,9 @@ class ToxgExpression
 		$value = $this->eatUntil($end);
 
 		// Did we split inside a string literal? Try to find the rest
-		if (($value[0] === '"' || $value[0] === '\'') && $value[0] !== substr($value, -1))
+		if (!empty($value) && ($value[0] === '"' || $value[0] === '\'') && $value[0] !== substr($value, -1))
 		{
 			$next = $this->firstPosOf(array($value[0]));
-
 			$value = substr($value, 1) . $this->eatUntil($next);
 		}
 
