@@ -462,12 +462,16 @@ class ToxgExpression
 		//   use formatter "type"
 		//   on $mno
 		//   with paramaters "nilla" and $rpg
+
 		$brackets = 0;
+
 		// Are we still looking for these?
 		$type = true;
 		$value = true;
+
 		if ($this->data_pos >= $this->data_len - 1 || $this->data[$this->data_pos + 1] === ':' || $this->data[$this->data_pos + 1] === '}')
-			$this->toss('expression_format_name_empty');
+			$this->toss('expression_format_type_empty');
+
 		while ($this->data_pos < $this->data_len)
 		{
 			$next = $this->firstPosOf(array('[', '.', ']', '}', ':'), 1);
@@ -475,6 +479,7 @@ class ToxgExpression
 				$next = $this->data_len;
 			$c = $this->data[$this->data_pos];
 			$this->data_pos++;
+
 			switch ($c)
 			{
 			case '%':
@@ -517,6 +522,9 @@ class ToxgExpression
 				// Ah, hit the end, jump out.  Must be a nested one.
 				if ($brackets <= 0)
 				{
+					// Quick exit, but we have to close the function first
+					$this->built[] = $value ? ')' : '))';
+
 					$this->data_pos--;
 					break 2;
 				}
@@ -527,7 +535,7 @@ class ToxgExpression
 			// All done - but don't skip it, our caller doesn't expect that.
 			case '}':
 				$this->data_pos--;
-				$this->built[] = '))';
+				$this->built[] = $value ? ')' : '))';
 				break 2;
 			// Maybe we're done with this?
 			case ':':

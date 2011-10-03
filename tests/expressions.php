@@ -73,6 +73,12 @@ function test_invalid_expression_012($harness)
 	$harness->addWrappedData('<tpl:output value="{$x.y[$a.b.c.d].z]}" />');
 }
 
+function test_invalid_expression_013($harness)
+{
+	$harness->expectFailure(1, 'expression_invalid_meta');
+	$harness->addWrappedData('<tpl:output value="{%:$a}" />');
+}
+
 function test_expression_001($harness)
 {
 	$harness->addWrappedData('<tpl:output value="{$x}" />');
@@ -242,6 +248,26 @@ function test_expression_032($harness)
 function test_expression_033($harness)
 {
 	$harness->addWrappedData('<tpl:output value="{$x.y[#z]}" />');
+}
+
+function test_expression_034($harness)
+{
+	$harness->addWrappedData('<tpl:output value="{%date:$x}" />');
+}
+
+function test_expression_035($harness)
+{
+	$harness->addWrappedData('<tpl:output value="{%date:$x:\'g:i A\'}" />');
+}
+
+function test_expression_036($harness)
+{
+	$harness->addWrappedData('<tpl:output value="{#lang:\'String: now with multiple :s!\'}" />');
+}
+
+function test_expression_037($harness)
+{
+	$harness->addWrappedData('<tpl:output value="{#lang:{%date:$x}}" />');
 }
 
 ?>

@@ -105,6 +105,7 @@ class ToxgException extends Exception
 		'expression_expected_ref_nolang' => 'expecting variable like {$name} inside braces.',
 		'expression_var_name_empty' => 'expecting a variable name, but just got {$}.',
 		'expression_lang_name_empty' => 'empty language reference.',
+		'expression_format_type_empty' => 'empty format type.',
 	);
 
 	public $tpl_file = null;
