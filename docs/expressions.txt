@@ -40,3 +40,20 @@ Here are a few examples:
 	{#foo_bar:$x:1:$someone.else:ORANGE:3}: Formats lots of things into it.
 	{#thing_is_height:{#person_named:$person.name}:{$person.height}}:
 		Complicated example of using a language string as a parameter.
+
+Formatting syntax
+--------------------------------------------------------------------------------
+Formatting, again, is very easy to use. The formatters available depend on the
+installation - right now you must create your own (!!! provide defaults?). These
+expressions follow this format: {%TYPE:{$value}:'arguments'}
+
+In most cases, format expressions might look like the following:
+
+	{%date:$birthday}: Formats a birthday using the default date format.
+	{%date:{$today.date}:'g:i A'}: Formats with a custom format.
+	{%upper:$name}: Shows a name in all capital letters.
+	{%lower:{#welcome_message}}: Formats a language string into lowercase.
+	{%number:{$price}}: Formats $price into something like 2,000.57
+	{%my_formatter:{$thing}:$first:{$second.param}:'third':{#fourth}}:
+		Formats using a custom formatter named 'my_formatter' with many
+		parameters.
